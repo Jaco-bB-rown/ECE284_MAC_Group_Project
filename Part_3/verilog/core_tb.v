@@ -71,7 +71,7 @@ integer out_file, out_scan_file ; // file_handler
 integer captured_data; 
 integer t, i, j, k, kij;
 integer error;
-
+reg [psum_bw*col-1:0]temp;
 
 assign inst_q[33] = acc_q;
 assign inst_q[32] = CEN_pmem_q;
@@ -253,25 +253,12 @@ initial begin
     /////// Activation data writing to L0 ///////
     A_xmem = 11'b00000000000;
 
-    for (t=0; t<col; t=t+1) begin  
+    for (t=0; t<len_nij; t=t+1) begin  
       #0.5 clk = 1'b0;   WEN_xmem = 1; CEN_xmem = 0; l0_wr = 1;  if (t>0) A_xmem = A_xmem + 1; 
       #0.5 clk = 1'b1;  
     end
 
     #0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 1; A_xmem = 0; l0_wr = 0;
-    #0.5 clk = 1'b1; 
-    /////////////////////////////////////
-
-
-
-    /////// Execution ///////
-    for (t=0; t<3*col; t=t+1) begin  
-      #0.5 clk = 1'b0;   l0_rd = 1; load = 0; execute=1;
-      //$display("MAC out: %128b",core_instance.corelet_inst.mac_array_inst.out_s);
-      #0.5 clk = 1'b1;  
-    end
-
-    #0.5 clk = 1'b0;   l0_rd = 0; load = 0; execute=0;
     #0.5 clk = 1'b1; 
     /////////////////////////////////////
 
@@ -281,19 +268,43 @@ initial begin
     p_scan_file = $fscanf(p_file,"%s", captured_data);
     p_scan_file = $fscanf(p_file,"%s", captured_data);
 
+    /////// Execution ///////
+    for (t=0; t<len_nij; t=t+1) begin  
+      #0.5 clk = 1'b0;   l0_rd = 1; load = 0; execute=1;
+      //$display("MAC out: %128b",core_instance.corelet_inst.mac_array_inst.out_s);
+      /*p_scan_file = $fscanf(p_file,"%128b", answer); // reading from out file to answer
+      temp = core_instance.corelet_inst.mac_array_out;
+      if (temp === answer)
+         $display("%d kij: %d-th psum featuremap Data matched! :D", kij, t); 
+       else begin
+         $display("%d-th psum featuremap Data ERROR!!", t); 
+         $display("OFIO out: %128b", temp);
+         $display("answer  : %128b", answer);
+         error = 1;
+       end*/
+      #0.5 clk = 1'b1;  
+    end
+
+    #0.5 clk = 1'b0;   l0_rd = 0; load = 0; execute=0;
+    #0.5 clk = 1'b1; 
+    /////////////////////////////////////
+
+
+
     //////// OFIFO READ ////////
     // Ideally, OFIFO should be read while execution, but we have enough ofifo
     // depth so we can fetch out after execution.
     A_pmem = 11'b00000000000;
-    for (t=0; t<3*row; t=t+1) begin  
+    for (t=0; t<len_nij; t=t+1) begin  
       #0.5 clk = 1'b0;   ofifo_rd = 1; WEN_pmem = 1; CEN_pmem = 0; if (t>0) A_pmem = A_pmem + 1; 
       //$display("OFIFO out: %128b", core_instance.corelet_out);
       p_scan_file = $fscanf(p_file,"%128b", answer); // reading from out file to answer
-      if (core_instance.corelet_out === answer)
+      temp = core_instance.corelet_out;
+      if (temp === answer)
          $display("%d kij: %d-th psum featuremap Data matched! :D", kij, t); 
        else begin
          $display("%d-th psum featuremap Data ERROR!!", t); 
-         $display("OFIO out: %128b", core_instance.corelet_out);
+         $display("OFIO out: %128b", temp);
          $display("answer  : %128b", answer);
          error = 1;
        end

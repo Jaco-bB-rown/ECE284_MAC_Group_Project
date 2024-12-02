@@ -74,7 +74,7 @@ module corelet #(
     );
 
     // Output
-    assign psum_out = ofifo_out;
-    assign o_ready = l0_fifo_ready;
+    //assign psum_out = ofifo_out;
+    //assign o_ready = l0_fifo_ready;
 
 endmodule
