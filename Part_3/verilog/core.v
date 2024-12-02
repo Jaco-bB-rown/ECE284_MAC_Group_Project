@@ -21,6 +21,13 @@ module core #(
     wire [row*bw-1:0] act_in,weight_in; // weight_in not used for weight stationary// dummy variable rn
     wire [col*psum_bw-1:0] corelet_out, pmem_in, pmem_out, sfp_in, sfp_out_temp;
 
+    assign xmem_addr = inst[17:7];
+    assign pmem_addr = inst[30:20];
+    assign CEN_xmem = inst[19];
+    assign WEN_xmem = inst[18];
+    assign CEN_pmem = inst[32];
+    assign WEN_pmem = inst[31];
+
     assign act_in = xmem_out;
     assign corelet_in = xmem_out;
     assign pmem_in = inst[33] ? sfp_out_temp : corelet_out;  // if accumulation sfp goes to pmem else corelet goes to pmem

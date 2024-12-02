@@ -60,12 +60,13 @@ reg execute;
 reg load;
 reg [8*30:1] stringvar;
 reg [8*30:1] w_file_name;
+reg [8*30:1] p_file_name;
 wire ofifo_valid;
 wire [col*psum_bw-1:0] sfp_out;
 
 integer x_file, x_scan_file ; // file_handler
 integer w_file, w_scan_file ; // file_handler
-integer acc_file, acc_scan_file ; // file_handler
+integer p_file, p_scan_file ; // file_handler
 integer out_file, out_scan_file ; // file_handler
 integer captured_data; 
 integer t, i, j, k, kij;
@@ -153,15 +154,15 @@ initial begin
   for (kij=0; kij<9; kij=kij+1) begin  // kij loop
 
     case(kij)
-     0: w_file_name = "weight_kij0.txt";
-     1: w_file_name = "weight_kij1.txt";
-     2: w_file_name = "weight_kij2.txt";
-     3: w_file_name = "weight_kij3.txt";
-     4: w_file_name = "weight_kij4.txt";
-     5: w_file_name = "weight_kij5.txt";
-     6: w_file_name = "weight_kij6.txt";
-     7: w_file_name = "weight_kij7.txt";
-     8: w_file_name = "weight_kij8.txt";
+     0: begin w_file_name = "weight_kij0.txt"; p_file_name = "psum_kij0.txt"; end
+     1: begin w_file_name = "weight_kij1.txt"; p_file_name = "psum_kij1.txt"; end
+     2: begin w_file_name = "weight_kij2.txt"; p_file_name = "psum_kij2.txt"; end
+     3: begin w_file_name = "weight_kij3.txt"; p_file_name = "psum_kij3.txt"; end
+     4: begin w_file_name = "weight_kij4.txt"; p_file_name = "psum_kij4.txt"; end
+     5: begin w_file_name = "weight_kij5.txt"; p_file_name = "psum_kij5.txt"; end
+     6: begin w_file_name = "weight_kij6.txt"; p_file_name = "psum_kij6.txt"; end
+     7: begin w_file_name = "weight_kij7.txt"; p_file_name = "psum_kij7.txt"; end
+     8: begin w_file_name = "weight_kij8.txt"; p_file_name = "psum_kij8.txt"; end
     endcase
     
 
@@ -195,14 +196,14 @@ initial begin
 
     for (t=0; t<col; t=t+1) begin  
       #0.5 clk = 1'b0;  w_scan_file = $fscanf(w_file,"%32b", D_xmem); WEN_xmem = 0; CEN_xmem = 0; if (t>0) A_xmem = A_xmem + 1;
-      $display("l0 loading: %32b",core_instance.D_xmem);
+      //$display("Mem addr: %11b", core_instance.xmem_addr);
       #0.5 clk = 1'b1;  
     end
 
     #0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 1; A_xmem = 0;
     #0.5 clk = 1'b1; 
     /////////////////////////////////////
-
+    $fclose(w_file);
 
 
     /////// Kernel data writing to L0 ///////
@@ -210,7 +211,7 @@ initial begin
 
     for (t=0; t<col; t=t+1) begin  
       #0.5 clk = 1'b0;   WEN_xmem = 1; CEN_xmem = 0; l0_wr = 1;  if (t>0) A_xmem = A_xmem + 1; 
-      //$display("l0 loading: %32b",core_instance.xmem_out);
+      //$display("l0 loading: %32b", core_instance.xmem_out);
       #0.5 clk = 1'b1;  
     end
 
@@ -264,7 +265,7 @@ initial begin
 
 
     /////// Execution ///////
-    for (t=0; t<3*col*len_nij; t=t+1) begin  
+    for (t=0; t<3*col; t=t+1) begin  
       #0.5 clk = 1'b0;   l0_rd = 1; load = 0; execute=1;
       //$display("MAC out: %128b",core_instance.corelet_inst.mac_array_inst.out_s);
       #0.5 clk = 1'b1;  
@@ -274,22 +275,35 @@ initial begin
     #0.5 clk = 1'b1; 
     /////////////////////////////////////
 
-
+    p_file = $fopen(p_file_name, "r");
+    // Following three lines are to remove the first three comment lines of the file
+    p_scan_file = $fscanf(p_file,"%s", captured_data);
+    p_scan_file = $fscanf(p_file,"%s", captured_data);
+    p_scan_file = $fscanf(p_file,"%s", captured_data);
 
     //////// OFIFO READ ////////
     // Ideally, OFIFO should be read while execution, but we have enough ofifo
     // depth so we can fetch out after execution.
     A_pmem = 11'b00000000000;
-    for (t=0; t<row; t=t+1) begin  
+    for (t=0; t<3*row; t=t+1) begin  
       #0.5 clk = 1'b0;   ofifo_rd = 1; WEN_pmem = 1; CEN_pmem = 0; if (t>0) A_pmem = A_pmem + 1; 
       //$display("OFIFO out: %128b", core_instance.corelet_out);
+      p_scan_file = $fscanf(p_file,"%128b", answer); // reading from out file to answer
+      if (core_instance.corelet_out === answer)
+         $display("%d kij: %d-th psum featuremap Data matched! :D", kij, t); 
+       else begin
+         $display("%d-th psum featuremap Data ERROR!!", t); 
+         $display("OFIO out: %128b", core_instance.corelet_out);
+         $display("answer  : %128b", answer);
+         error = 1;
+       end
       #0.5 clk = 1'b1;  
     end
 
     #0.5 clk = 1'b0;   ofifo_rd = 0;  WEN_pmem = 1; CEN_pmem = 0; A_pmem = 0;
     #0.5 clk = 1'b1; 
     /////////////////////////////////////
-
+    $fclose(p_file);
 
   end  // end of kij loop
 //kernal values are all computed now we sum them up to get our output
@@ -352,7 +366,7 @@ initial begin
 
   end
 
-  $fclose(acc_file);
+  //$fclose(acc_file);
   //////////////////////////////////
 
   for (t=0; t<10; t=t+1) begin  
