@@ -1,6 +1,6 @@
 // Created by prof. Mingu Kang @VVIP Lab in UCSD ECE department
 // Please do not spread this code without permission 
-module l0 (clk, in, out, rd, wr, o_full, reset, o_ready);
+module l0_fifo (clk, in, out, rd, wr, o_full, reset, o_ready);
 
   parameter row  = 8;
   parameter bw = 4;
