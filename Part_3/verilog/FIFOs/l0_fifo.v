@@ -50,16 +50,16 @@ module l0_fifo (clk, in, out, rd, wr, o_full, reset, o_ready);
    else
 
       /////////////// version1: read all row at a time ////////////////
-      for(j=0; j<row; j=j+1)begin
+      /*for(j=0; j<row; j=j+1)begin
          rd_en[j] <= rd;
-      end
+      end*/
       ///////////////////////////////////////////////////////
 
 
 
       //////////////// version2: read 1 row at a time /////////////////
       rd_en[0] <= rd;
-      for(j=1; j<row; j=j+1)begin
+      for(j=1; j<row+1; j=j+1)begin
          rd_en[j] <= rd_en[j-1];
       end
       ///////////////////////////////////////////////////////

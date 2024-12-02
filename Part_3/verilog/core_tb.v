@@ -71,7 +71,7 @@ integer captured_data;
 integer t, i, j, k, kij;
 integer error;
 
-assign inst_q[34] = acc_q;
+
 assign inst_q[33] = acc_q;
 assign inst_q[32] = CEN_pmem_q;
 assign inst_q[31] = WEN_pmem_q;
@@ -205,7 +205,15 @@ initial begin
 
 
     /////// Kernel data writing to L0 ///////
-    
+    A_xmem = 11'b10000000000;
+
+    for (t=0; t<col; t=t+1) begin  
+      #0.5 clk = 1'b0;   WEN_xmem = 1; CEN_xmem = 0; l0_wr = 1;  if (t>0) A_xmem = A_xmem + 1; 
+      #0.5 clk = 1'b1;  
+    end
+
+    #0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 1; A_xmem = 0; l0_wr = 0;
+    #0.5 clk = 1'b1; 
 
 
     /////////////////////////////////////
@@ -213,7 +221,14 @@ initial begin
 
 
     /////// Kernel loading to PEs ///////
-    ...
+    for (t=0; t<3*col; t=t+1) begin  
+      #0.5 clk = 1'b0;   l0_rd = 1; load = 1; execute=0;
+      #0.5 clk = 1'b1;  
+    end
+
+    #0.5 clk = 1'b0;   l0_rd = 0; load = 0; execute=0;
+    #0.5 clk = 1'b1; 
+
     /////////////////////////////////////
   
 
@@ -232,13 +247,28 @@ initial begin
 
 
     /////// Activation data writing to L0 ///////
-    ...
+    A_xmem = 11'b00000000000;
+
+    for (t=0; t<col; t=t+1) begin  
+      #0.5 clk = 1'b0;   WEN_xmem = 1; CEN_xmem = 0; l0_wr = 1;  if (t>0) A_xmem = A_xmem + 1; 
+      #0.5 clk = 1'b1;  
+    end
+
+    #0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 1; A_xmem = 0; l0_wr = 0;
+    #0.5 clk = 1'b1; 
     /////////////////////////////////////
 
 
 
     /////// Execution ///////
-    ...
+    for (t=0; t<3*col*len_nij; t=t+1) begin  
+      #0.5 clk = 1'b0;   l0_rd = 1; load = 0; execute=1;
+      $display("MAC out: %128b",core_instance.corelet_inst.mac_array_inst.out_s);
+      #0.5 clk = 1'b1;  
+    end
+
+    #0.5 clk = 1'b0;   l0_rd = 0; load = 0; execute=0;
+    #0.5 clk = 1'b1; 
     /////////////////////////////////////
 
 
@@ -246,7 +276,15 @@ initial begin
     //////// OFIFO READ ////////
     // Ideally, OFIFO should be read while execution, but we have enough ofifo
     // depth so we can fetch out after execution.
-    ...
+    A_pmem = 11'b00000000000;
+    for (t=0; t<row; t=t+1) begin  
+      #0.5 clk = 1'b0;   ofifo_rd = 1; WEN_pmem = 1; CEN_pmem = 0; if (t>0) A_pmem = A_pmem + 1; 
+      //$display("OFIFO out: %128b", core_instance.corelet_out);
+      #0.5 clk = 1'b1;  
+    end
+
+    #0.5 clk = 1'b0;   ofifo_rd = 0;  WEN_pmem = 1; CEN_pmem = 0; A_pmem = 0;
+    #0.5 clk = 1'b1; 
     /////////////////////////////////////
 
 
@@ -290,7 +328,7 @@ initial begin
     #0.5 clk = 1'b0; reset = 0; 
     #0.5 clk = 1'b1;  
 
-    for (j=0; j<len_kij+1; j=j+1) begin 
+    /*for (j=0; j<len_kij+1; j=j+1) begin 
 
       #0.5 clk = 1'b0;   
         if (j<len_kij) begin CEN_pmem = 0; WEN_pmem = 1; acc_scan_file = $fscanf(acc_file,"%11b", A_pmem); end
@@ -301,7 +339,7 @@ initial begin
     end
 
     #0.5 clk = 1'b0; acc = 0;
-    #0.5 clk = 1'b1; 
+    #0.5 clk = 1'b1; */
   end
 
 
