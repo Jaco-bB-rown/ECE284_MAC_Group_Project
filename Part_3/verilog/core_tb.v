@@ -7,10 +7,10 @@ module core_tb;
 parameter bw = 4;
 parameter psum_bw = 16;
 parameter len_kij = 9;
-parameter len_onij = 16;
+parameter len_onij = 16; //coordinates of output feature map
 parameter col = 8;
 parameter row = 8;
-parameter len_nij = 36;
+parameter len_nij = 36; //coordinates of input feature map
 
 reg clk = 0;
 reg reset = 1;
@@ -18,19 +18,24 @@ reg reset = 1;
 wire [33:0] inst_q; 
 
 reg [1:0]  inst_w_q = 0; 
-reg [bw*row-1:0] D_xmem_q = 0;
-reg CEN_xmem = 1;
-reg WEN_xmem = 1;
-reg [10:0] A_xmem = 0;
-reg CEN_xmem_q = 1;
+//Input SRAM variables:
+reg [bw*row-1:0] D_xmem_q = 0;//input
+reg CEN_xmem = 1; //clock enable i think. enabled when CEN=0
+reg WEN_xmem = 1; // write enable. enabled when WEN=0
+reg [10:0] A_xmem = 0;//address
+reg CEN_xmem_q = 1; 
 reg WEN_xmem_q = 1;
 reg [10:0] A_xmem_q = 0;
-reg CEN_pmem = 1;
-reg WEN_pmem = 1;
-reg [10:0] A_pmem = 0;
+
+//output SRAM variables:
+reg CEN_pmem = 1;//clock enable
+reg WEN_pmem = 1;//write enable
+reg [10:0] A_pmem = 0;//address
 reg CEN_pmem_q = 1;
 reg WEN_pmem_q = 1;
 reg [10:0] A_pmem_q = 0;
+
+//commands for various core components
 reg ofifo_rd_q = 0;
 reg ififo_wr_q = 0;
 reg ififo_rd_q = 0;
@@ -42,7 +47,7 @@ reg acc_q = 0;
 reg acc = 0;
 
 reg [1:0]  inst_w; 
-reg [bw*row-1:0] D_xmem;
+reg [bw*row-1:0] D_xmem; //output of input memory
 reg [psum_bw*col-1:0] answer;
 
 
@@ -66,6 +71,7 @@ integer captured_data;
 integer t, i, j, k, kij;
 integer error;
 
+assign inst_q[34] = acc_q;
 assign inst_q[33] = acc_q;
 assign inst_q[32] = CEN_pmem_q;
 assign inst_q[31] = WEN_pmem_q;
@@ -86,8 +92,8 @@ core  #(.bw(bw), .col(col), .row(row)) core_instance (
 	.clk(clk), 
 	.inst(inst_q),
 	.ofifo_valid(ofifo_valid),
-        .D_xmem(D_xmem_q), 
-        .sfp_out(sfp_out), 
+  .D_xmem(D_xmem_q), 
+  .sfp_out(sfp_out), 
 	.reset(reset)); 
 
 
@@ -109,7 +115,7 @@ initial begin
   $dumpfile("core_tb.vcd");
   $dumpvars(0,core_tb);
 
-  x_file = $fopen("activation_tile0.txt", "r");
+  x_file = $fopen("activation.txt", "r");
   // Following three lines are to remove the first three comment lines of the file
   x_scan_file = $fscanf(x_file,"%s", captured_data);
   x_scan_file = $fscanf(x_file,"%s", captured_data);
@@ -143,19 +149,19 @@ initial begin
   $fclose(x_file);
   /////////////////////////////////////////////////
 
-
+//loop through all of our kernal values and check the psum for each one
   for (kij=0; kij<9; kij=kij+1) begin  // kij loop
 
     case(kij)
-     0: w_file_name = "weight_itile0_otile0_kij0.txt";
-     1: w_file_name = "weight_itile0_otile0_kij1.txt";
-     2: w_file_name = "weight_itile0_otile0_kij2.txt";
-     3: w_file_name = "weight_itile0_otile0_kij3.txt";
-     4: w_file_name = "weight_itile0_otile0_kij4.txt";
-     5: w_file_name = "weight_itile0_otile0_kij5.txt";
-     6: w_file_name = "weight_itile0_otile0_kij6.txt";
-     7: w_file_name = "weight_itile0_otile0_kij7.txt";
-     8: w_file_name = "weight_itile0_otile0_kij8.txt";
+     0: w_file_name = "weight_kij0.txt";
+     1: w_file_name = "weight_kij1.txt";
+     2: w_file_name = "weight_kij2.txt";
+     3: w_file_name = "weight_kij3.txt";
+     4: w_file_name = "weight_kij4.txt";
+     5: w_file_name = "weight_kij5.txt";
+     6: w_file_name = "weight_kij6.txt";
+     7: w_file_name = "weight_kij7.txt";
+     8: w_file_name = "weight_kij8.txt";
     endcase
     
 
@@ -199,7 +205,9 @@ initial begin
 
 
     /////// Kernel data writing to L0 ///////
-    ...
+    
+
+
     /////////////////////////////////////
 
 
@@ -243,7 +251,7 @@ initial begin
 
 
   end  // end of kij loop
-
+//kernal values are all computed now we sum them up to get our output
 
   ////////// Accumulation /////////
   out_file = $fopen("out.txt", "r");  

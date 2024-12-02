@@ -8,5 +8,7 @@
 ../verilog/FIFOs/fifo_mux_16_1.v
 ../verilog/FIFOs/ofifo.v
 ../verilog/FIFOs/l0_fifo.v
-../verilog/SRAMs/sram_32b_w2048.v
-../verilog/core_tb.v
+../verilog/SRAMs/sram.v
+../verilog/sfp.v
+../verilog/corelet.v
+../verilog/core.v
