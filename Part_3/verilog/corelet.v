@@ -24,11 +24,17 @@ module corelet #(
     wire [psum_bw*col-1:0] ofifo_out;
 
     // Extract control signals from inst
-    wire ofifo_rd = inst[6];
-    wire ififo_wr = inst[5];//ififo not present in this part
-    wire ififo_rd = inst[4];
-    wire l0_rd = inst[3];
-    wire l0_wr = inst[2];
+    wire ofifo_rd ;
+    wire ififo_wr ;//ififo not present in this part
+    wire ififo_rd;
+    wire l0_rd ;
+    wire l0_wr ;
+
+    assign ofifo_rd = inst[6];
+    assign ififo_wr = inst[5];//ififo not present in this part
+    assign ififo_rd = inst[4];
+    assign l0_rd = inst[3];
+    assign l0_wr = inst[2];
 
     assign corelet_out = ofifo_out;
     // L0 FIFO

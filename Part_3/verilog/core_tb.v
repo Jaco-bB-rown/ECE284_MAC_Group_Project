@@ -194,7 +194,8 @@ initial begin
     A_xmem = 11'b10000000000;
 
     for (t=0; t<col; t=t+1) begin  
-      #0.5 clk = 1'b0;  w_scan_file = $fscanf(w_file,"%32b", D_xmem); WEN_xmem = 0; CEN_xmem = 0; if (t>0) A_xmem = A_xmem + 1; 
+      #0.5 clk = 1'b0;  w_scan_file = $fscanf(w_file,"%32b", D_xmem); WEN_xmem = 0; CEN_xmem = 0; if (t>0) A_xmem = A_xmem + 1;
+      $display("l0 loading: %32b",core_instance.D_xmem);
       #0.5 clk = 1'b1;  
     end
 
@@ -209,6 +210,7 @@ initial begin
 
     for (t=0; t<col; t=t+1) begin  
       #0.5 clk = 1'b0;   WEN_xmem = 1; CEN_xmem = 0; l0_wr = 1;  if (t>0) A_xmem = A_xmem + 1; 
+      //$display("l0 loading: %32b",core_instance.xmem_out);
       #0.5 clk = 1'b1;  
     end
 
@@ -223,6 +225,7 @@ initial begin
     /////// Kernel loading to PEs ///////
     for (t=0; t<3*col; t=t+1) begin  
       #0.5 clk = 1'b0;   l0_rd = 1; load = 1; execute=0;
+      //$display("Kernal loading: %32b",core_instance.corelet_inst.mac_array_inst.in_w);
       #0.5 clk = 1'b1;  
     end
 
@@ -263,7 +266,7 @@ initial begin
     /////// Execution ///////
     for (t=0; t<3*col*len_nij; t=t+1) begin  
       #0.5 clk = 1'b0;   l0_rd = 1; load = 0; execute=1;
-      $display("MAC out: %128b",core_instance.corelet_inst.mac_array_inst.out_s);
+      //$display("MAC out: %128b",core_instance.corelet_inst.mac_array_inst.out_s);
       #0.5 clk = 1'b1;  
     end
 
