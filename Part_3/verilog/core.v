@@ -29,7 +29,7 @@ module core #(
     assign WEN_pmem = inst[31];
 
     assign act_in = xmem_out;
-    assign corelet_in = xmem_out;
+    //assign corelet_in = xmem_out;
     assign pmem_in = inst[33] ? sfp_out_temp : corelet_out;  // if accumulation sfp goes to pmem else corelet goes to pmem
     assign sfp_out = sfp_out_temp;
     assign ofifo_valid = o_valid;
