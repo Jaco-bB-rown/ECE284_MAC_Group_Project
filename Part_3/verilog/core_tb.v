@@ -8,9 +8,11 @@ parameter bw = 4;
 parameter psum_bw = 16;
 parameter len_kij = 9;
 parameter len_onij = 16; //coordinates of output feature map
+parameter len_oni = 4; //coordinates of output feature map
 parameter col = 8;
 parameter row = 8;
 parameter len_nij = 36; //coordinates of input feature map
+parameter len_nij = 6; //coordinates of input feature map
 
 reg clk = 0;
 reg reset = 1;
@@ -213,26 +215,33 @@ initial begin
     #0.5 clk = 1'b1; */
     for (t=0; t<col+3; t=t+1) begin  
       #0.5 clk = 1'b0;   WEN_xmem = 1; CEN_xmem = 0; 
-      if (t>1)  A_xmem = A_xmem + 1;
-      if (t>2) begin l0_wr = 1;  
+      if (t>1) begin A_xmem = A_xmem + 1; l0_wr = 1; end
+      if (t>2) begin   
         //$display("Mem addr: %11b", core_instance.xmem_addr);
         //$display("kij= %1d %1d : l0 W in: %32b",kij,t-3,core_instance.corelet_inst.activation_in);
       end
       #0.5 clk = 1'b1;  
     end
-
+    //$display("SRAM first weight %32b",core_instance.xmem_sram.memory[11'b10000000000]);
     #0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 1; A_xmem = 0; l0_wr = 0;
     #0.5 clk = 1'b1; 
 
 
     /////////////////////////////////////
 
+    #0.5 clk = 1'b0;   l0_rd = 1;load = 1;
+    #0.5 clk = 1'b1;
+
+    #0.5 clk = 1'b0; 
+    #0.5 clk = 1'b1;
 
 
     /////// Kernel loading to PEs ///////
-    for (t=0; t<3*col; t=t+1) begin  
-      #0.5 clk = 1'b0;    load = 1; execute=0; if(t>1*col-1) l0_rd = 0; else l0_rd = 1;
-      $display("Kernal loading: %32b",core_instance.corelet_inst.mac_array_inst.in_w);
+    for (t=0; t<2*col-1; t=t+1) begin  
+      #0.5 clk = 1'b0; execute=0;  
+      if(t>1*col-3)begin l0_rd = 0; load = 0;end 
+      else begin l0_rd = 1; load = 1;end
+      //$display("Kernal loading: %32b and load= %16b",core_instance.corelet_inst.mac_array_inst.in_w,core_instance.corelet_inst.mac_array_inst.inst_w_temp);
        
       #0.5 clk = 1'b1;  
     end
@@ -249,7 +258,7 @@ initial begin
     #0.5 clk = 1'b1;  
   
 
-    for (i=0; i<12 ; i=i+1) begin
+    for (i=0; i<16 ; i=i+1) begin
       #0.5 clk = 1'b0;
       #0.5 clk = 1'b1;  
     end
@@ -259,7 +268,7 @@ initial begin
 
     /////// Activation data writing to L0 ///////
     A_xmem = 0;
-    for (t=0; t<len_nij; t=t+1) begin  
+    for (t=0; t<len_nij+3; t=t+1) begin  
       #0.5 clk = 1'b0;   WEN_xmem = 1; CEN_xmem = 0; 
       if (t>1)  A_xmem = A_xmem + 1;
       if (t>2) begin l0_wr = 1;  
@@ -280,9 +289,17 @@ initial begin
     p_scan_file = $fscanf(p_file,"%s", captured_data);
 
     /////// Execution ///////
+    #0.5 clk = 1'b0;   l0_rd = 1;
+    #0.5 clk = 1'b1;
+    #0.5 clk = 1'b0;
+    #0.5 clk = 1'b1;
+    #0.5 clk = 1'b0; 
+    #0.5 clk = 1'b1;
+
     for (t=0; t<len_nij; t=t+1) begin  
-      #0.5 clk = 1'b0;    load = 0; execute=1;
-      if (t>0) l0_rd = 1;
+      #0.5 clk = 1'b0;    load = 0; execute=1; 
+      if(t>len_nij-col+1)begin l0_rd = 0; end 
+      else begin l0_rd = 1; end
       //$display("%2d : MAC in: %32b",t,core_instance.corelet_inst.mac_array_inst.in_w);
       //$display("%2d : MAC out: %128b",t,core_instance.corelet_inst.mac_array_inst.out_s);
       #0.5 clk = 1'b1;  
@@ -298,26 +315,28 @@ initial begin
     //////// OFIFO READ ////////
     // Ideally, OFIFO should be read while execution, but we have enough ofifo
     // depth so we can fetch out after execution.
-    A_pmem = 11'b00000000000;
-    for (t=0; t<len_nij+2; t=t+1) begin  
+    A_pmem = 11'b00000000000+len_nij*kij;
+    for (t=0; t<len_nij; t=t+1) begin  
       #0.5 clk = 1'b0;   ofifo_rd = 1; WEN_pmem = 1; CEN_pmem = 0; if (t>0) A_pmem = A_pmem + 1; 
       //$display("OFIFO out: %128b", core_instance.corelet_out);
-      /*if(t>2) begin
+      //if(t>) begin
       p_scan_file = $fscanf(p_file,"%128b", answer); // reading from out file to answer
       temp = core_instance.corelet_out;
       if (temp === answer)
-         $display("%d kij: %d-th psum featuremap Data matched! :D", kij, t-3); 
+         $display("%d kij: %d-th psum featuremap Data matched! :D", kij, t); 
        else begin
-         $display("%d-th psum featuremap Data ERROR!!", t-3); 
-         $display("OFIO out: %128b", temp);
-         $display("answer  : %128b", answer);
+         $display("%d-th psum featuremap Data ERROR!!", t); 
+         $display("OFIO out: %16b %16b %16b %16b %16b %16b %16b %16b", 
+         temp[psum_bw*8-1:psum_bw*7],temp[psum_bw*7-1:psum_bw*6],temp[psum_bw*6-1:psum_bw*5],temp[psum_bw*5-1:psum_bw*4],temp[psum_bw*4-1:psum_bw*3],temp[psum_bw*3-1:psum_bw*2],temp[psum_bw*2-1:psum_bw*1],temp[psum_bw*1-1:psum_bw*0]
+         );
+         $display("answer  : %16b %16b %16b %16b %16b %16b %16b %16b", answer[psum_bw*8-1:psum_bw*7],answer[psum_bw*7-1:psum_bw*6],answer[psum_bw*6-1:psum_bw*5],answer[psum_bw*5-1:psum_bw*4],answer[psum_bw*4-1:psum_bw*3],answer[psum_bw*3-1:psum_bw*2],answer[psum_bw*2-1:psum_bw*1],answer[psum_bw*1-1:psum_bw*0]);
          error = 1;
        end
-      end*/
+      //end
       #0.5 clk = 1'b1;  
     end
 
-    #0.5 clk = 1'b0;   ofifo_rd = 0;  WEN_pmem = 1; CEN_pmem = 0; A_pmem = 0;
+    #0.5 clk = 1'b0;   ofifo_rd = 0;  WEN_pmem = 1; CEN_pmem = 1; A_pmem = 0;
     #0.5 clk = 1'b1; 
     /////////////////////////////////////
     $fclose(p_file);
@@ -341,10 +360,18 @@ initial begin
 
   for (i=0; i<len_onij+1; i=i+1) begin 
 
-    #0.5 clk = 1'b0; 
+    #0.5 clk = 1'b0; acc= 1; CEN_pmem = 0;
     #0.5 clk = 1'b1; 
 
     if (i>0) begin
+      //kernal loop
+      for(k=0; k < len_kij; k=k+1)begin
+          #0.5 clk = 1'b0; acc= 1; CEN_pmem = 0; A_pmem=len_nij*kij + ((i/len_onij)*len_nij);
+          #0.5 clk = 1'b1;
+
+
+
+      end
      out_scan_file = $fscanf(out_file,"%128b", answer); // reading from out file to answer
        if (sfp_out == answer)
          $display("%2d-th output featuremap Data matched! :D", i); 
