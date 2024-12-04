@@ -1,6 +1,6 @@
 // Created by prof. Mingu Kang @VVIP Lab in UCSD ECE department
 // Please do not spread this code without permission 
-module mac_array (clk, reset, out_s, in_w, in_n, inst_w, valid);
+module mac_array (clk, reset, out_s, in_w, in_n, inst_w, valid, mode);
 
   parameter bw = 4;
   parameter psum_bw = 16;
@@ -13,12 +13,17 @@ module mac_array (clk, reset, out_s, in_w, in_n, inst_w, valid);
   input  [1:0] inst_w;
   input  [psum_bw*col-1:0] in_n;
   output [col-1:0] valid;
+  input mode;
 
 
   reg    [2*row-1:0] inst_w_temp;
   wire   [psum_bw*col*(row+1)-1:0] temp;
   wire   [row*col-1:0] valid_temp;
 
+  wire   [row*bw-1:0] stationary_weights;  // Weights used in weight-stationary mode
+  wire   [psum_bw*col-1:0] stationary_psums; // PSUMs used in output-stationary mode
+  wire   [row*bw-1:0] mux_weights;
+  wire   [psum_bw*col-1:0] mux_psums;
 
   genvar i;
  
@@ -26,11 +31,14 @@ module mac_array (clk, reset, out_s, in_w, in_n, inst_w, valid);
   assign temp[psum_bw*col*1-1:psum_bw*col*0] = 0;
   assign valid = valid_temp[row*col-1:row*col-8];
 
+  assign mux_weights = mode ? in_w : stationary_weights;
+  assign mux_psums = mode ? stationary_psums : in_n;
+
   for (i=1; i < row+1 ; i=i+1) begin : row_num
       mac_row #(.bw(bw), .psum_bw(psum_bw)) mac_row_instance (
          .clk(clk),
          .reset(reset),
-	 .in_w(in_w[bw*i-1:bw*(i-1)]),
+	 .in_w(mux_weights[bw*i-1:bw*(i-1)]),
 	 .inst_w(inst_w_temp[2*i-1:2*(i-1)]),
 	 .in_n(temp[psum_bw*col*i-1:psum_bw*col*(i-1)]),
          .valid(valid_temp[col*i-1:col*(i-1)]),
