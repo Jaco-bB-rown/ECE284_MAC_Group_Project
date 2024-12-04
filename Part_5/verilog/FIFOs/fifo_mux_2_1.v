@@ -15,10 +15,10 @@ module fifo_mux_2_1(in0, in1, sel, out);
 
   not G01 (sbar, sel);
 
-  for (i=0; i < bw ; i=i+1) begin : gen
+  generate for (i=0; i < bw ; i=i+1) begin : gen
      and G0  (w1[i], in0[i], sbar);
      and G1  (w2[i], in1[i], sel);
      or  G2  (out[i], w1[i], w2[i]);
   end
-
+  endgenerate
  endmodule

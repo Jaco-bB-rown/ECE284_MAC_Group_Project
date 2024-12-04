@@ -13,6 +13,7 @@ output [1:0] inst_e;
 input  [psum_bw-1:0] in_n;
 input  clk;
 input  reset;
+input  mode_select;
 
 
 wire [psum_bw-1:0] mac_out;

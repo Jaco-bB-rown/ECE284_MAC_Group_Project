@@ -13,10 +13,11 @@ input signed  [psum_bw-1:0] c;
 
 wire signed [2*bw:0] product;
 wire signed [psum_bw-1:0] psum;
-wire signed [2*bw-1:0]   a_pad;
+//wire signed [2*bw-1:0]   a_pad;
 
-assign a_pad = {(bw){a[bw-1]}, a};
-assign product = a_pad * b;
+//assign a_pad = {(bw){a[bw-1]}, a};
+//assign product = a_pad * b;
+assign product = a * b;
 
 assign psum = product + c;
 assign out = psum;
