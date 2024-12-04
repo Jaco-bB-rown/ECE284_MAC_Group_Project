@@ -1,5 +1,5 @@
 module sfp #(
-    parameter bw = 4,
+    parameter bw = 16,
     parameter col = 8
 )(
     input clk,
@@ -9,6 +9,7 @@ module sfp #(
 );
 
     reg [bw*col-1:0] acc; 
+    
 
     genvar i;
     generate
@@ -18,8 +19,8 @@ module sfp #(
                     out[bw*(i+1)-1 : bw*i] <= 0;
                     acc[bw*(i+1)-1 : bw*i] <= 0;
                 end else begin
-                    acc[bw*(i+1)-1 : bw*i] <= acc[bw*(i+1)-1 : bw*i] + in[bw*(i+1)-1 : bw*i];
-                    out[bw*(i+1)-1 : bw*i] <= (acc[bw*(i+1)-1] == 1'b1) ? 0 : acc[bw*(i+1)-1 : bw*i];
+                    acc[bw*(i+1)-1 : bw*i] <= $signed(acc[bw*(i+1)-1 : bw*i]) + $signed(in[bw*(i+1)-1 : bw*i]);
+                    out[bw*(i+1)-1 : bw*i] <= ($signed(acc[bw*(i+1)-1 : bw*i]) < 0) ? 0 : acc[bw*(i+1)-1 : bw*i];
                 end
             end
         end
