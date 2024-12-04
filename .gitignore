@@ -7,3 +7,4 @@ Part_1/result/VGG16_quant/model_best.pth.tar
 /Part_4/simulation/
 Part_4/corelet.qpf
 Part_4/corelet.qsf
+Part_4/corelet.qws
