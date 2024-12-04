@@ -21,7 +21,7 @@ module mac_row (clk, out_s, in_w, in_n, valid, inst_w, reset);
   assign inst_temp[inst_bw-1:0] = inst_w;
 
   genvar i;
-  for (i=1; i < col+1 ; i=i+1) begin : col_num
+  generate for (i=1; i < col+1 ; i=i+1) begin : col_num
       mac_tile #(.bw(bw), .psum_bw(psum_bw)) mac_tile_instance (
          .clk(clk),
          .reset(reset),
@@ -35,5 +35,5 @@ module mac_row (clk, out_s, in_w, in_n, valid, inst_w, reset);
          //set valid as inst_e[1] for each tile
          assign valid[i-1] = inst_temp[((i+1)*inst_bw-1)];
   end
-
+  endgenerate
 endmodule

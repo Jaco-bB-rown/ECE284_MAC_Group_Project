@@ -1,3 +1,9 @@
 /Part_1/data/
 Part_1/result/VGG16_quant/checkpoint.pth
 Part_1/result/VGG16_quant/model_best.pth.tar
+/Part_4/db/
+/Part_4/incremental_db/
+/Part_4/output_files/
+/Part_4/simulation/
+Part_4/corelet.qpf
+Part_4/corelet.qsf

@@ -20,7 +20,7 @@ module sfp #(
                     acc[bw*(i+1)-1 : bw*i] <= 0;
                 end else begin
                     acc[bw*(i+1)-1 : bw*i] <= $signed(acc[bw*(i+1)-1 : bw*i]) + $signed(in[bw*(i+1)-1 : bw*i]);
-                    out[bw*(i+1)-1 : bw*i] <= ($signed(acc[bw*(i+1)-1 : bw*i]) < 0) ? 0 : acc[bw*(i+1)-1 : bw*i];
+                    out[bw*(i+1)-1 : bw*i] <= ($signed(acc[bw*(i+1)-1 : bw*i]) < 0) ? 16'b0000000000000000 : acc[bw*(i+1)-1 : bw*i];
                 end
             end
         end

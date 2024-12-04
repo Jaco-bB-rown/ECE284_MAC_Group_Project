@@ -29,7 +29,7 @@ module l0_fifo (clk, in, out, rd, wr, o_full, reset, o_ready);
   assign out = temp_out;
 
 
-  for (i=0; i<row ; i=i+1) begin : row_num
+  generate for (i=0; i<row ; i=i+1) begin : row_num
       fifo_depth64 #(.bw(bw)) fifo_instance (
 	 .rd_clk(clk),
 	 .wr_clk(clk),
@@ -41,7 +41,7 @@ module l0_fifo (clk, in, out, rd, wr, o_full, reset, o_ready);
 	 .out(temp_out[bw*(i+1)-1 : bw*(i)]),
          .reset(reset));
   end
-   
+   endgenerate
 
   always @ (posedge clk) begin
    if (reset) begin
@@ -59,7 +59,7 @@ module l0_fifo (clk, in, out, rd, wr, o_full, reset, o_ready);
 
       //////////////// version2: read 1 row at a time /////////////////
       rd_en[0] <= rd;
-      for(j=0; j<row; j=j+1)begin
+      for(j=0; j<row-1; j=j+1)begin
          rd_en[j+1] <= rd_en[j];
       end
       ///////////////////////////////////////////////////////

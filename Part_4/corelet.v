@@ -37,6 +37,7 @@ module corelet #(
     assign l0_rd = inst[3];
     assign l0_wr = inst[2];
 
+    assign o_ready = ofifo_ready;
     assign corelet_out = inst[7] ? sfp_out : ofifo_out;
     // L0 FIFO
     l0_fifo #(.bw(bw), .row(row)) l0_fifo_inst (
