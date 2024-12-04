@@ -281,8 +281,8 @@ initial begin
       if (t>1)  A_xmem = A_xmem + 1;
       if (t>2) begin l0_wr = 1;  
         //$display("Mem addr: %11b", core_instance.xmem_addr);
-        //$display("ic= %1d %1d : l0 A in: %32b",ic,t-3,core_instance.corelet_inst.activation_in);
-        //$display("ififo_wr %b",core_instance.corelet_inst.ififo_wr);
+        $display("ic= %1d %1d : l0 A in: %32b",ic,t-3,core_instance.corelet_inst.activation_in);
+        $display("ififo_wr %b",core_instance.corelet_inst.ififo_wr);
       end
       #0.5 clk = 1'b1;  
     end
@@ -292,10 +292,12 @@ initial begin
     /////////////////////////////////////
 
 
-    /////// Execution ///////
-    #0.5 clk = 1'b0;   l0_rd = 1; ififo_rd = 1;
+    /////// Execution ///////    
+    #0.5 clk = 1'b0;   l0_rd = 1;
     #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0;
+    #0.5 clk = 1'b0;   l0_rd = 1;
+    #0.5 clk = 1'b1;
+    #0.5 clk = 1'b0;  ififo_rd = 1;
     #0.5 clk = 1'b1;
     #0.5 clk = 1'b0; 
     #0.5 clk = 1'b1;
@@ -304,11 +306,12 @@ initial begin
       #0.5 clk = 1'b0;    load = 0; execute=1; 
       if(t>len_nij-col+1)begin l0_rd = 0; ififo_rd = 0; end 
       else begin l0_rd = 1; ififo_rd = 1; end
-      $display("%2d : MAC in: %32b",t,core_instance.corelet_inst.mac_array_inst.in_n);
-      //$display("%2d : MAC out: %128b",t,core_instance.corelet_inst.mac_array_inst.out_s);
+      $display("%2d : MAC in_n: %32b",t,core_instance.corelet_inst.ififo_out);
+      $display("%2d : MAC in_n: %128b",t,core_instance.corelet_inst.mac_array_inst.in_n);
+      $display("%2d : MAC in_w: %32b",t,core_instance.corelet_inst.mac_array_inst.in_w);
       #0.5 clk = 1'b1;  
     end
-    end  // end of kij loop
+  end  // end of kij loop
     #0.5 clk = 1'b0;   l0_rd = 0; load = 1; execute=0; 
     #0.5 clk = 1'b1; 
     
@@ -325,7 +328,7 @@ initial begin
     //////// OFIFO READ ////////
     // Ideally, OFIFO should be read while execution, but we have enough ofifo
     // depth so we can fetch out after execution.
-    #0.5 clk = 1'b0; WEN_pmem = 0; CEN_pmem = 0; A_pmem = 11'b00000000000 ; load = 1;
+    #0.5 clk = 1'b0; WEN_pmem = 0; CEN_pmem = 0; A_pmem = 11'b00000000000 ; load = 0;
     #0.5 clk = 1'b1;
     #0.5 clk = 1'b0; A_pmem = 11'b00000000001 ; temp = core_instance.corelet_out;
     #0.5 clk = 1'b1;

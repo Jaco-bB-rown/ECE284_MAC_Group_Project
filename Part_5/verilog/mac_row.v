@@ -35,8 +35,8 @@ module mac_row (clk, out_s, in_w, in_n, valid, inst_w, reset, mode_select);
 	       .in_n(in_n[i*psum_bw-1:(i-1)*(psum_bw)]),
 	       .out_s(out_s[(i)*psum_bw-1:(i-1)*(psum_bw)]),
          .mode_select(mode_select));
-         assign valid_temp1[i-1] = inst_temp[((i)*inst_bw)];
-         assign valid_temp2[i-1] = inst_temp[((i+1)*inst_bw-1)];
+         assign valid_temp2[i-1] = inst_temp[((i)*inst_bw)];
+         assign valid_temp1[i-1] = inst_temp[((i+1)*inst_bw-1)];
   end
   endgenerate
   /*integer j;

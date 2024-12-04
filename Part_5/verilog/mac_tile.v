@@ -29,7 +29,7 @@ wire [bw-1:0]b_q_signext;
 assign b_q_signext = { {psum_bw-bw{b_q[bw-1]}}, b_q };
 assign out_e = a_q;
 assign inst_e = inst_q;
-assign out_s = output_select ? b_q_signext : c_q;
+assign out_s = output_select ? b_q_signext : mac_out;
 
 mac #(.bw(bw), .psum_bw(psum_bw)) mac_instance (
         .a(a_q), 
@@ -49,26 +49,31 @@ always@(posedge clk) begin
         else begin
                 inst_q[1] <= inst_w[1]; //always accept
                 if (inst_w != 2'b00) begin
-                        if (mode_select) begin
+                        if (!mode_select) begin
                                 // Weight-Stationary Mode: Send weight to MAC
                                 a_q <= in_w;         // Activate input (west) to east output
                                 c_q <= in_n;         // Feature map (activation) to MAC
-                                output_select <= 1;
+                                output_select <= 0;
                                 if (inst_w[0] == 1'b1 && load_ready_q == 1'b1) begin
-                                b_q <= in_w;   // Load weight
-                                load_ready_q <= 1'b0;
+                                        b_q <= in_w;   // Load weight
+                                        load_ready_q <= 1'b0;
                                 end
                         end
-                        else begin
-                                // Output-Stationary Mode: Send output to MAC
-                                a_q <= in_w;        // Feature map (activation) input
+                        else begin// Output-Stationary Mode: Send output to MAC
+                                a_q <= in_w;
+                                b_q <= in_n;// Feature map (activation) input                                
                                 c_q <= mac_out;     // Output from MAC
-                                b_q <= in_n;   // Load weight
+                                   // Load weight
                                 if (inst_w[0] == 1'b1 && load_ready_q == 1'b1) begin//load signal now defines when we output
+                                        //a_q <= 0;        // Feature map (activation) input
+                                        //b_q <= 0;   // Load weight
                                         output_select <= 0;
                                         load_ready_q <= 1'b0;
                                 end
-                                else output_select <= 1;
+                                else begin
+                                        output_select <= 1;
+
+                                end
                         end
                 end
 

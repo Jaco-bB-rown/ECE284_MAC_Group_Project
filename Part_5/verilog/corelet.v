@@ -55,7 +55,7 @@ module corelet #(
         .o_ready(l0_fifo_ready)
     );
     //IFIFO for weights
-    ififo #(.bw(bw), .row(row))   ififo_inst(
+    l0_fifo #(.bw(bw), .row(row))   ififo_inst(
         .clk(clk),
         .in(weight_in),
         .out(ififo_out),
@@ -99,7 +99,7 @@ module corelet #(
     );
     genvar i;
     generate for(i=0;i<col;i=i+1) begin//pass sign extended input into our mac_array
-        assign mac_array_in_n_temp[(i+1)*psum_bw-1:i*psum_bw] = { {psum_bw-bw{ififo_out[bw-1]}}, ififo_out };
+        assign mac_array_in_n_temp[(i+1)*psum_bw-1:i*psum_bw] = { {psum_bw-bw{ififo_out[bw*(i+1)-1]}}, ififo_out[bw*(i+1)-1:bw*i] };
     end
     endgenerate
     // Output
