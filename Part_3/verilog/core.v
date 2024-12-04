@@ -33,6 +33,7 @@ module core #(
     assign pmem_in = inst[33] ? sfp_out_temp : corelet_out;  // if accumulation sfp goes to pmem else corelet goes to pmem
     assign sfp_out = sfp_out_temp;
     assign ofifo_valid = o_valid;
+    assign sfp_in = inst[33] ? pmem_out : 0;
 
     // SRAM for activations and weights
     sram #(.bw(row*bw)) xmem_sram (
@@ -69,7 +70,7 @@ module core #(
         .clk(clk),
         .reset(reset),
         .in(sfp_in),
-        .out(sfp_out)
+        .out(sfp_out_temp)
     );
 
 
