@@ -42,7 +42,8 @@ module mac_array (clk, reset, out_s, in_w, in_n, inst_w, valid, mode);
 	 .inst_w(inst_w_temp[2*i-1:2*(i-1)]),
 	 .in_n(temp[psum_bw*col*i-1:psum_bw*col*(i-1)]),
          .valid(valid_temp[col*i-1:col*(i-1)]),
-	 .out_s(temp[psum_bw*col*(i+1)-1:psum_bw*col*(i)]));
+	 .out_s(temp[psum_bw*col*(i+1)-1:psum_bw*col*(i)])
+   .mode_select(mode));
   end
 
   always @ (posedge clk) begin
