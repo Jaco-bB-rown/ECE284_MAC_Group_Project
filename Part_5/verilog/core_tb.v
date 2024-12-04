@@ -316,10 +316,10 @@ initial begin
     #0.5 clk = 1'b1; 
     
     ////////////////Start moving outputs to the ofifo/////////////////////
-    for (i=0; i<24 ; i=i+1) begin
+    for (i=0; i<32 ; i=i+1) begin
       #0.5 clk = 1'b0;
-      $display("%2d : MAC valid: %8b",t,core_instance.corelet_inst.mac_array_inst.valid);
-      $display("%2d : MAC out: %128b",t,core_instance.corelet_inst.mac_array_inst.out_s);
+      $display("%2d : MAC valid: %8b",i,core_instance.corelet_inst.mac_array_inst.valid);
+      $display("%2d : MAC out: %128b",i,core_instance.corelet_inst.mac_array_inst.out_s);
       #0.5 clk = 1'b1;  
     end
     #0.5 clk = 1'b0;   load=0;
@@ -334,6 +334,8 @@ initial begin
     #0.5 clk = 1'b1;
     for (t=0; t<len_onij; t=t+1) begin  
       #0.5 clk = 1'b0;   ofifo_rd = 1; WEN_pmem = 0; CEN_pmem = 0;  A_pmem = A_pmem + 1; 
+      $display("Mem addr: %11b", core_instance.xmem_addr);
+      $display("Mem input: %32b", core_instance.D_xmem);
       #0.5 clk = 1'b1;  
     end
       /*if(error < 1) begin

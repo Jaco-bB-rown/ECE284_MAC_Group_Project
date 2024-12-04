@@ -60,19 +60,23 @@ always@(posedge clk) begin
                                 end
                         end
                         else begin// Output-Stationary Mode: Send output to MAC
-                                a_q <= in_w;
-                                b_q <= in_n;// Feature map (activation) input                                
-                                c_q <= mac_out;     // Output from MAC
-                                   // Load weight
+                                   
                                 if (inst_w[0] == 1'b1 && load_ready_q == 1'b1) begin//load signal now defines when we output
-                                        //a_q <= 0;        // Feature map (activation) input
-                                        //b_q <= 0;   // Load weight
+                                        a_q <= 0;        // Feature map (activation) input
+                                        b_q <= 0;   // Load weight
+                                        c_q <= mac_out;     // Output from MAC
                                         output_select <= 0;
                                         load_ready_q <= 1'b0;
                                 end
+                                else if(load_ready_q == 1'b0) begin //then pass inst next clock
+                                        c_q <= in_n;//pass along
+                                        output_select <= 0;
+                                end
                                 else begin
                                         output_select <= 1;
-
+                                        c_q <= mac_out;     // Output from MAC
+                                        a_q <= in_w;        // Feature map (activation) input
+                                        b_q <= in_n;        // Load weight
                                 end
                         end
                 end
