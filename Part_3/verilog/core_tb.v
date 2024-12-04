@@ -324,7 +324,7 @@ initial begin
     for (t=0; t<len_nij; t=t+1) begin  
       #0.5 clk = 1'b0;   ofifo_rd = 1; WEN_pmem = 0; CEN_pmem = 0;  A_pmem = A_pmem + 1; 
       //$display("OFIFO out: %128b", core_instance.corelet_out);
-      //if(t>) begin
+      if(t>0) begin
       p_scan_file = $fscanf(p_file,"%128b", answer); // reading from out file to answer
       temp = core_instance.corelet_out;
       if (temp === answer) begin
@@ -338,7 +338,7 @@ initial begin
          $display("answer  : %16b %16b %16b %16b %16b %16b %16b %16b", answer[psum_bw*8-1:psum_bw*7],answer[psum_bw*7-1:psum_bw*6],answer[psum_bw*6-1:psum_bw*5],answer[psum_bw*5-1:psum_bw*4],answer[psum_bw*4-1:psum_bw*3],answer[psum_bw*3-1:psum_bw*2],answer[psum_bw*2-1:psum_bw*1],answer[psum_bw*1-1:psum_bw*0]);
          error = 1;
        end
-      //end
+      end
       #0.5 clk = 1'b1;  
 
     end
@@ -367,33 +367,36 @@ initial begin
 
 
   $display("############ Verification Start during accumulation #############"); 
-$display("SRAM first PSUM %32b",core_instance.pmem_sram.memory[11'b00000001000]);
-  for (i=0; i<len_onij+1; i=i+1) begin 
+$display("SRAM eigth PSUM %32b",core_instance.pmem_sram.memory[11'b00000001000]);
+  for (i=0; i<len_onij; i=i+1) begin 
 
-    //#0.5 clk = 1'b0; acc= 1; CEN_pmem = 0; WEN_pmem = 1; A_pmem=len_nij*0 + (i/len_oni)*len_ni + i%len_oni + (0/len_ki)*len_ni + 0%len_ki;
-    //#0.5 clk = 1'b1; 
-    for(k=0; k < len_kij+1; k=k+1)begin//kernal loop
-          #0.5 clk = 1'b0; acc= 1; CEN_pmem = 0; WEN_pmem = 1;
-          if(k<len_kij) begin A_pmem=len_nij*k + (i/len_oni)*len_ni + i%len_oni + (k/len_ki)*len_ni + k%len_ki;
-            $display("%2d-th,k=%1d Mem Address %11b", i,k, A_pmem);
+    A_pmem=len_nij*0 + (i/len_oni)*len_ni + i%len_oni + (0/len_ki)*len_ni + 0%len_ki;
+
+    for(k=0; k < len_kij+3; k=k+1)begin//kernal loop
+          #0.5 clk = 1'b0;  CEN_pmem = 0; WEN_pmem = 1;
+          if(k>1) begin A_pmem=len_nij*(k-1) + (i/len_oni)*len_ni + i%len_oni + ((k-1)/len_ki)*len_ni + (k-1)%len_ki;acc= 1;
+            $display("%2d-th,k=%1d Mem Address %11b", i,k-2, core_instance.pmem_addr);
           end
-          else begin CEN_pmem = 1; WEN_pmem = 1;end
-          if(k>0)$display("%2d-th,k=%1d SFP In %128b", i,k-1, core_instance.sfp_in);
+          if(k>2)begin $display("%2d-th,k=%1d SFP In %128b", i,k-3, core_instance.sfp_in);end
+          if(k>len_kij+1) acc=0;
           #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0; CEN_pmem = 1; WEN_pmem = 1;
+    end
+    #0.5 clk = 1'b0; CEN_pmem = 1; WEN_pmem = 1; acc=0;
     #0.5 clk = 1'b1;
-      end
-    if (i>0) begin
+  
      out_scan_file = $fscanf(out_file,"%128b", answer); // reading from out file to answer
        if (sfp_out == answer)
          $display("%2d-th output featuremap Data matched! :D", i); 
        else begin
          $display("%2d-th output featuremap Data ERROR!!", i); 
-         $display("sfpout: %128b", sfp_out);
-         $display("answer: %128b", answer);
+         $display("sfpout  : %16b %16b %16b %16b %16b %16b %16b %16b", 
+         sfp_out[psum_bw*8-1:psum_bw*7],sfp_out[psum_bw*7-1:psum_bw*6],sfp_out[psum_bw*6-1:psum_bw*5],sfp_out[psum_bw*5-1:psum_bw*4],sfp_out[psum_bw*4-1:psum_bw*3],sfp_out[psum_bw*3-1:psum_bw*2],sfp_out[psum_bw*2-1:psum_bw*1],sfp_out[psum_bw*1-1:psum_bw*0]
+         );
+         $display("answer  : %16b %16b %16b %16b %16b %16b %16b %16b", answer[psum_bw*8-1:psum_bw*7],answer[psum_bw*7-1:psum_bw*6],answer[psum_bw*6-1:psum_bw*5],answer[psum_bw*5-1:psum_bw*4],answer[psum_bw*4-1:psum_bw*3],answer[psum_bw*3-1:psum_bw*2],answer[psum_bw*2-1:psum_bw*1],answer[psum_bw*1-1:psum_bw*0]);
+
          error = 1;
        end
-    end
+    
    
  
     #0.5 clk = 1'b0; reset = 1;
