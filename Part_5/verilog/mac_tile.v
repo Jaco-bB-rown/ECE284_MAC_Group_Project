@@ -1,6 +1,6 @@
 // Created by prof. Mingu Kang @VVIP Lab in UCSD ECE department
 // Please do not spread this code without permission 
-module mac_tile (clk, out_s, in_w, out_e, in_n, inst_w, inst_e, reset);
+module mac_tile (clk, out_s, in_w, out_e, in_n, inst_w, inst_e, reset, mode_select);
 
 parameter bw = 4;
 parameter psum_bw = 16;
@@ -13,6 +13,7 @@ output [1:0] inst_e;
 input  [psum_bw-1:0] in_n;
 input  clk;
 input  reset;
+
 
 wire [psum_bw-1:0] mac_out;
 reg [1:0]inst_q;
@@ -43,14 +44,27 @@ always@(posedge clk) begin
         end
         else begin
                 inst_q[1] <= inst_w[1]; //always accept
-                if(inst_w != 0) begin//always pass west to the east
-                        a_q <= in_w;
-                        c_q <= in_n;
+                if (inst_w != 2'b00) begin
+                        if (mode_select) begin
+                                // Weight-Stationary Mode: Send weight to MAC
+                                a_q <= in_w;         // Activate input (west) to east output
+                                c_q <= in_n;         // Feature map (activation) to MAC
+                                if (inst_w[0] == 1'b1 && load_ready_q == 1'b1) begin
+                                b_q <= in_w;   // Load weight
+                                load_ready_q <= 1'b0;
+                                end
+                        end
+                        else begin
+                                // Output-Stationary Mode: Send output to MAC
+                                a_q <= in_n;        // Feature map (activation) input
+                                c_q <= mac_out;     // Output from MAC
+                                if (inst_w[0] == 1'b1 && load_ready_q == 1'b1) begin
+                                b_q <= in_w;   // Load weight
+                                load_ready_q <= 1'b0;
+                                end
+                        end
                 end
-                if(inst_w[0] == 1'b1 && load_ready_q == 1'b1) begin //load weight
-                        b_q <= in_w; 
-                        load_ready_q <= 1'b0;
-                end
+
                 if(load_ready_q == 1'b0) begin //then pass inst next clock
                         inst_q[0] <= inst_w[0];
                 end
