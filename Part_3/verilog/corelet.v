@@ -8,10 +8,11 @@ module corelet #(
     input wire reset,
     input wire [bw*row-1:0] activation_in,
     input wire [bw*row-1:0] weight_in,
+    input wire [psum_bw*col-1:0] sfp_in,
     output wire [psum_bw*col-1:0] corelet_out,
     output wire o_ready,
     output wire o_valid,
-    input wire [6:0] inst
+    input wire [7:0] inst
 );
 
     // Internal signals
@@ -21,7 +22,7 @@ module corelet #(
     wire [bw*row-1:0] l0_fifo_out;
     wire [psum_bw*col-1:0] mac_array_in_n;//not used in this part
     wire ofifo_full, ofifo_ready, ofifo_valid;
-    wire [psum_bw*col-1:0] ofifo_out;
+    wire [psum_bw*col-1:0] ofifo_out, sfp_out;
 
     // Extract control signals from inst
     wire ofifo_rd ;
@@ -36,7 +37,7 @@ module corelet #(
     assign l0_rd = inst[3];
     assign l0_wr = inst[2];
 
-    assign corelet_out = ofifo_out;
+    assign corelet_out = inst[7] ? sfp_out : ofifo_out;
     // L0 FIFO
     l0_fifo #(.bw(bw), .row(row)) l0_fifo_inst (
         .clk(clk),
@@ -73,6 +74,12 @@ module corelet #(
         .valid(mac_array_valid)
     );
 
+    sfp #(.bw(psum_bw), .col(col)) sfp_row  (
+        .clk(clk),
+        .reset(reset),
+        .in(sfp_in),
+        .out(sfp_out)
+    );
     // Output
     //assign psum_out = ofifo_out;
     //assign o_ready = l0_fifo_ready;

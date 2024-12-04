@@ -19,7 +19,7 @@ module core #(
     wire [10:0] xmem_addr, pmem_addr;
 
     wire [row*bw-1:0] act_in,weight_in; // weight_in not used for weight stationary// dummy variable rn
-    wire [col*psum_bw-1:0] corelet_out, pmem_in, pmem_out, sfp_in, sfp_out_temp;
+    wire [col*psum_bw-1:0] corelet_out, pmem_in, pmem_out, sfp_in;
 
     assign xmem_addr = inst[17:7];
     assign pmem_addr = inst[30:20];
@@ -30,8 +30,8 @@ module core #(
 
     assign act_in = xmem_out;
     //assign corelet_in = xmem_out;
-    assign pmem_in = inst[33] ? sfp_out_temp : corelet_out;  // if accumulation sfp goes to pmem else corelet goes to pmem
-    assign sfp_out = sfp_out_temp;
+    assign pmem_in =  corelet_out;  // if accumulation sfp goes to pmem else corelet goes to pmem
+    assign sfp_out = inst[33] ? corelet_out : 0;;
     assign ofifo_valid = o_valid;
     assign sfp_in = inst[33] ? pmem_out : 0;
 
@@ -59,19 +59,15 @@ module core #(
     corelet #(.bw(bw), .psum_bw(psum_bw), .col(col), .row(row)) corelet_inst (
         .clk(clk),
         .reset(reset),
-        .inst(inst[6:0]),
+        .inst({inst[33],inst[6:0]}),
         .activation_in(act_in),
         .weight_in(weight_in),
+        .sfp_in(sfp_in),
         .corelet_out(corelet_out),
         .o_valid(o_valid)
     );
 
-    sfp #(.bw(psum_bw), .col(col)) sfp_row  (
-        .clk(clk),
-        .reset(reset),
-        .in(sfp_in),
-        .out(sfp_out_temp)
-    );
+
 
 
 endmodule

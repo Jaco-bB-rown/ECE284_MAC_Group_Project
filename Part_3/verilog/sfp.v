@@ -16,11 +16,11 @@ module sfp #(
         for (i = 0; i < col; i = i + 1) begin : relu_acc_gen
             always @(posedge clk or posedge reset) begin
                 if (reset) begin
-                    //out[bw*(i+1)-1 : bw*i] <= 0;
+                    out[bw*(i+1)-1 : bw*i] <= 0;
                     acc[bw*(i+1)-1 : bw*i] <= 0;
                 end else begin
                     acc[bw*(i+1)-1 : bw*i] <= $signed(acc[bw*(i+1)-1 : bw*i]) + $signed(in[bw*(i+1)-1 : bw*i]);
-                    out[bw*(i+1)-1 : bw*i] <= (acc[bw*(i+1)-1] == 1'b1) ? 0 : acc[bw*(i+1)-1 : bw*i];
+                    out[bw*(i+1)-1 : bw*i] <= ($signed(acc[bw*(i+1)-1 : bw*i]) < 0) ? 0 : acc[bw*(i+1)-1 : bw*i];
                 end
             end
         end
