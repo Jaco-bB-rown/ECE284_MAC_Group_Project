@@ -13,9 +13,9 @@ input signed  [psum_bw-1:0] c;
 
 wire signed [2*bw:0] product;
 wire signed [psum_bw-1:0] psum;
-wire signed [bw:0]   a_pad;
+wire signed [2*bw-1:0]   a_pad;
 
-assign a_pad = {1'b0, a}; // force to be unsigned number
+assign a_pad = {(bw){a[bw-1]}, a};
 assign product = a_pad * b;
 
 assign psum = product + c;
