@@ -1,6 +1,6 @@
 // Created by prof. Mingu Kang @VVIP Lab in UCSD ECE department
 // Please do not spread this code without permission 
-module mac_array (clk, reset, out_s, in_w, in_n, inst_w, valid, mode);
+module mac_array (clk, reset, out_s, in_w, in_n, inst_w, valid, mode, output_en);
 
   parameter bw = 4;
   parameter psum_bw = 16;
@@ -14,9 +14,11 @@ module mac_array (clk, reset, out_s, in_w, in_n, inst_w, valid, mode);
   input  [psum_bw*col-1:0] in_n;
   output [col-1:0] valid;
   input mode;
+  input output_en;
 
 
   reg    [2*row-1:0] inst_w_temp;
+  reg    [row-1:0] output_en_temp;
   wire   [psum_bw*col*(row+1)-1:0] temp;
   wire   [row*col-1:0] valid_temp;
 
@@ -43,10 +45,11 @@ module mac_array (clk, reset, out_s, in_w, in_n, inst_w, valid, mode);
 	       .in_n(temp[psum_bw*col*i-1:psum_bw*col*(i-1)]),
          .valid(valid_temp[col*i-1:col*(i-1)]),
 	       .out_s(temp[psum_bw*col*(i+1)-1:psum_bw*col*(i)]),
-         .mode_select(mode));
+         .mode_select(mode),
+         .output_en(output_en_temp[i-1]));
   end
   endgenerate
-
+  integer j;
   always @ (posedge clk) begin
     //valid <= valid_temp[row*col-1:row*col-8];
     inst_w_temp[1:0]   <= inst_w; 
@@ -57,6 +60,13 @@ module mac_array (clk, reset, out_s, in_w, in_n, inst_w, valid, mode);
     inst_w_temp[11:10] <= inst_w_temp[9:8]; 
     inst_w_temp[13:12] <= inst_w_temp[11:10]; 
     inst_w_temp[15:14] <= inst_w_temp[13:12]; 
+
+    if(mode)begin//start outputting from the bottom then go to the top
+      output_en_temp[row-1] = output_en;
+      for(j=0;j<row-1;j=j+1)begin
+          output_en_temp[j] = output_en;
+      end
+    end
   end
 
 

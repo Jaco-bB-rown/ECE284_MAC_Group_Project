@@ -13,7 +13,8 @@ module corelet #(
     output wire [psum_bw*col-1:0] corelet_out,
     output wire o_ready,
     output wire o_valid,
-    input wire [7:0] inst
+    input wire [7:0] inst,
+    input wire output_en
 );
 
     // Internal signals
@@ -32,7 +33,7 @@ module corelet #(
     wire l0_rd ;
     wire l0_wr ;
     wire acc ;
-
+    
     assign acc = inst[7];
     assign ofifo_rd = inst[6];
     assign ififo_wr = inst[5];
@@ -88,7 +89,8 @@ module corelet #(
         .in_n(mac_array_in_n),
         .inst_w(inst[1:0]),
         .valid(mac_array_valid),
-        .mode(mode)
+        .mode(mode),
+        .output_en(output_en)
     );
 
     sfp #(.bw(psum_bw), .col(col)) sfp_row  (

@@ -1,6 +1,6 @@
 // Created by prof. Mingu Kang @VVIP Lab in UCSD ECE department
 // Please do not spread this code without permission 
-module mac_row (clk, out_s, in_w, in_n, valid, inst_w, reset, mode_select);
+module mac_row (clk, out_s, in_w, in_n, valid, inst_w, reset, mode_select,output_en);
 
   parameter bw = 4;
   parameter psum_bw = 16;
@@ -14,6 +14,7 @@ module mac_row (clk, out_s, in_w, in_n, valid, inst_w, reset, mode_select);
   input  [1:0] inst_w;
   input  [psum_bw*col-1:0] in_n;
   input  mode_select;
+  input output_en;
 
   wire  [(col+1)*bw-1:0] temp;
   wire  [(col+1)*inst_bw-1:0] inst_temp;
@@ -34,8 +35,9 @@ module mac_row (clk, out_s, in_w, in_n, valid, inst_w, reset, mode_select);
 	       .inst_e(inst_temp[(i+1)*inst_bw-1:(i)*(inst_bw)]),
 	       .in_n(in_n[i*psum_bw-1:(i-1)*(psum_bw)]),
 	       .out_s(out_s[(i)*psum_bw-1:(i-1)*(psum_bw)]),
-         .mode_select(mode_select));
-         assign valid_temp2[i-1] = inst_temp[((i)*inst_bw)];
+         .mode_select(mode_select),
+         .output_en(output_en));
+         assign valid_temp2[i-1] = output_en;
          assign valid_temp1[i-1] = inst_temp[((i+1)*inst_bw-1)];
   end
   endgenerate

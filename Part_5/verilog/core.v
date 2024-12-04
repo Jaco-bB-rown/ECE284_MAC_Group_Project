@@ -7,7 +7,7 @@ module core #(
     input wire clk,
     input wire reset,
     input wire [row*bw-1:0] D_xmem,
-    input wire [34:0] inst,
+    input wire [35:0] inst,
     output wire [col*psum_bw-1:0] sfp_out,
     output wire  ofifo_valid
 );
@@ -72,7 +72,8 @@ module core #(
         .sfp_in(sfp_in),
         .corelet_out(corelet_out),
         .o_valid(o_valid),
-        .mode(inst[34])
+        .mode(inst[34]),
+        .output_en(inst[35])
     );
 
 

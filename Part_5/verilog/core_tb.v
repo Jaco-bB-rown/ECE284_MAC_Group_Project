@@ -19,7 +19,7 @@ parameter len_ic = 3;
 reg clk = 0;
 reg reset = 1;
 
-wire [34:0] inst_q; 
+wire [35:0] inst_q; 
 
 reg [1:0]  inst_w_q = 0; 
 //Input SRAM variables:
@@ -51,6 +51,8 @@ reg acc_q = 0;
 reg acc = 0;
 reg mode = 1;
 reg mode_q = 1;
+reg output_en = 0;
+reg output_en_q = 0;
 
 reg [1:0]  inst_w; 
 reg [bw*row-1:0] D_xmem; //output of input memory
@@ -80,6 +82,7 @@ integer error;
 reg [psum_bw*col-1:0]temp;
 reg [psum_bw*col-1:0]temp_q;
 
+assign inst_q[35] = output_en_q;
 assign inst_q[34] = mode_q;
 assign inst_q[33] = acc_q;
 assign inst_q[32] = CEN_pmem_q;
@@ -122,6 +125,7 @@ initial begin
   load     = 0;
   temp_q   = 0;
   mode     = 1;
+  output_en= 0;
 
   error = 0;
   $dumpfile("core_tb.vcd");
@@ -304,38 +308,49 @@ initial begin
 
     for (t=0; t<len_nij; t=t+1) begin  
       #0.5 clk = 1'b0;    load = 0; execute=1; 
-      if(t>len_nij-col+1)begin l0_rd = 0; ififo_rd = 0; end 
+      if(t>len_nij-col)begin l0_rd = 0; ififo_rd = 0; end 
       else begin l0_rd = 1; ififo_rd = 1; end
       $display("%2d : MAC in_n: %32b",t,core_instance.corelet_inst.ififo_out);
       $display("%2d : MAC in_n: %128b",t,core_instance.corelet_inst.mac_array_inst.in_n);
       $display("%2d : MAC in_w: %32b",t,core_instance.corelet_inst.mac_array_inst.in_w);
       #0.5 clk = 1'b1;  
     end
+    ////// provide some intermission to clear up the execution ///
+    #0.5 clk = 1'b0;  load = 0; l0_rd = 0;execute=0;
+    #0.5 clk = 1'b1;  
+    for (i=0; i<16 ; i=i+1) begin
+      #0.5 clk = 1'b0;
+      #0.5 clk = 1'b1;  
+    end
+
+
   end  // end of kij loop
-    #0.5 clk = 1'b0;   l0_rd = 0; load = 1; execute=0; 
+    #0.5 clk = 1'b0;   l0_rd = 0; load = 0; execute=0; output_en=1; 
     #0.5 clk = 1'b1; 
     
     ////////////////Start moving outputs to the ofifo/////////////////////
     for (i=0; i<32 ; i=i+1) begin
       #0.5 clk = 1'b0;
+      //if(i>col) load = 0;
       $display("%2d : MAC valid: %8b",i,core_instance.corelet_inst.mac_array_inst.valid);
       $display("%2d : MAC out: %128b",i,core_instance.corelet_inst.mac_array_inst.out_s);
+      $display("%2d : MAC out of some row: %128b",i,core_instance.corelet_inst.mac_array_inst.temp[psum_bw*9*col-1:psum_bw*8*col]);
       #0.5 clk = 1'b1;  
     end
-    #0.5 clk = 1'b0;   load=0;
+    #0.5 clk = 1'b0;   load=0; output_en=0;
     #0.5 clk = 1'b1; 
 
     //////// OFIFO READ ////////
     // Ideally, OFIFO should be read while execution, but we have enough ofifo
     // depth so we can fetch out after execution.
-    #0.5 clk = 1'b0; WEN_pmem = 0; CEN_pmem = 0; A_pmem = 11'b00000000000 ; load = 0;
+    #0.5 clk = 1'b0; WEN_pmem = 0; CEN_pmem = 0; A_pmem = len_onij ; load = 0;
     #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0; A_pmem = 11'b00000000001 ; temp = core_instance.corelet_out;
+    #0.5 clk = 1'b0; A_pmem = len_onij-1 ; temp = core_instance.corelet_out;
     #0.5 clk = 1'b1;
     for (t=0; t<len_onij; t=t+1) begin  
-      #0.5 clk = 1'b0;   ofifo_rd = 1; WEN_pmem = 0; CEN_pmem = 0;  A_pmem = A_pmem + 1; 
-      $display("Mem addr: %11b", core_instance.xmem_addr);
-      $display("Mem input: %32b", core_instance.D_xmem);
+      #0.5 clk = 1'b0;   ofifo_rd = 1; WEN_pmem = 0; CEN_pmem = 0;  A_pmem = A_pmem - 1; 
+      $display("Mem addr: %11b", core_instance.pmem_addr);
+      //$display("Mem input: %32b", core_instance._xmem);
       #0.5 clk = 1'b1;  
     end
       /*if(error < 1) begin
@@ -441,6 +456,7 @@ always @ (posedge clk) begin
    load_q     <= load;
    temp_q     <= temp;
    mode_q     <= mode;
+   output_en_q<= output_en;
 end
 
 
