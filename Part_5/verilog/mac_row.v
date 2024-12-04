@@ -17,9 +17,11 @@ module mac_row (clk, out_s, in_w, in_n, valid, inst_w, reset, mode_select);
 
   wire  [(col+1)*bw-1:0] temp;
   wire  [(col+1)*inst_bw-1:0] inst_temp;
-
+  wire [col-1:0] valid_temp1;
+  wire [col-1:0] valid_temp2;
   assign temp[bw-1:0]   = in_w;
   assign inst_temp[inst_bw-1:0] = inst_w;
+  assign valid = mode_select ? valid_temp2 : valid_temp1;
 
   genvar i;
   generate for (i=1; i < col+1 ; i=i+1) begin : col_num
@@ -33,8 +35,21 @@ module mac_row (clk, out_s, in_w, in_n, valid, inst_w, reset, mode_select);
 	       .in_n(in_n[i*psum_bw-1:(i-1)*(psum_bw)]),
 	       .out_s(out_s[(i)*psum_bw-1:(i-1)*(psum_bw)]),
          .mode_select(mode_select));
-         //set valid as inst_e[1] for each tile
-         assign valid[i-1] = inst_temp[((i+1)*inst_bw-1)];
+         assign valid_temp1[i-1] = inst_temp[((i)*inst_bw)];
+         assign valid_temp2[i-1] = inst_temp[((i+1)*inst_bw-1)];
   end
   endgenerate
+  /*integer j;
+
+  always @ (posedge clk) begin
+    if (reset) begin
+      valid_temp <= 8'b00000000;
+   end
+   else begin
+      for (j=1; j < col+1 ; j=j+1) begin 
+        if (mode_select) begin valid_temp1[j-1] = inst_temp[((j)*inst_bw)];end
+        else begin valid_temp2[j-1] = inst_temp[((j+1)*inst_bw-1)];end//set valid as inst_e[1] for each tile
+      end
+   end
+  end*/
 endmodule

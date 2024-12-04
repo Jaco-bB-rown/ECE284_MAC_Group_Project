@@ -8,17 +8,18 @@ parameter bw = 4;
 parameter psum_bw = 16;
 parameter len_kij = 9;
 parameter len_ki = 3;
-parameter len_onij = 16; //coordinates of output feature map
-parameter len_oni = 4; //coordinates of output feature map
+parameter len_onij = 8; //coordinates of output feature map
+parameter len_oni = 8; //coordinates of output feature map
 parameter col = 8;
 parameter row = 8;
-parameter len_nij = 36; //coordinates of input feature map
-parameter len_ni = 6; //coordinates of input feature map
+parameter len_nij = 9; //coordinates of input feature map
+parameter len_ni = 8; //coordinates of input feature map
+parameter len_ic = 3;
 
 reg clk = 0;
 reg reset = 1;
 
-wire [33:0] inst_q; 
+wire [34:0] inst_q; 
 
 reg [1:0]  inst_w_q = 0; 
 //Input SRAM variables:
@@ -48,6 +49,8 @@ reg execute_q = 0;
 reg load_q = 0;
 reg acc_q = 0;
 reg acc = 0;
+reg mode = 1;
+reg mode_q = 1;
 
 reg [1:0]  inst_w; 
 reg [bw*row-1:0] D_xmem; //output of input memory
@@ -63,7 +66,7 @@ reg execute;
 reg load;
 reg [8*30:1] stringvar;
 reg [8*30:1] w_file_name;
-reg [8*30:1] p_file_name;
+reg [8*30:1] x_file_name;
 wire ofifo_valid;
 wire [col*psum_bw-1:0] sfp_out;
 
@@ -72,11 +75,12 @@ integer w_file, w_scan_file ; // file_handler
 integer p_file, p_scan_file ; // file_handler
 integer out_file, out_scan_file ; // file_handler
 integer captured_data; 
-integer t, i, j, k, kij;
+integer t, i, j, k, ic;
 integer error;
 reg [psum_bw*col-1:0]temp;
 reg [psum_bw*col-1:0]temp_q;
 
+assign inst_q[34] = mode_q;
 assign inst_q[33] = acc_q;
 assign inst_q[32] = CEN_pmem_q;
 assign inst_q[31] = WEN_pmem_q;
@@ -117,16 +121,13 @@ initial begin
   execute  = 0;
   load     = 0;
   temp_q   = 0;
+  mode     = 1;
 
   error = 0;
   $dumpfile("core_tb.vcd");
   $dumpvars(0,core_tb);
 
-  x_file = $fopen("activation.txt", "r");
-  // Following three lines are to remove the first three comment lines of the file
-  x_scan_file = $fscanf(x_file,"%s", captured_data);
-  x_scan_file = $fscanf(x_file,"%s", captured_data);
-  x_scan_file = $fscanf(x_file,"%s", captured_data);
+;
 
   //////// Reset /////////
   #0.5 clk = 1'b0;   reset = 1;
@@ -144,34 +145,23 @@ initial begin
   #0.5 clk = 1'b1;   
   /////////////////////////
 
-  /////// Activation data writing to memory ///////
-  for (t=0; t<len_nij; t=t+1) begin  
-    #0.5 clk = 1'b0;  x_scan_file = $fscanf(x_file,"%32b", D_xmem); WEN_xmem = 0; CEN_xmem = 0; if (t>0) A_xmem = A_xmem + 1;
-    #0.5 clk = 1'b1;   
-  end
 
-  #0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 1; A_xmem = 0;
-  #0.5 clk = 1'b1; 
 
-  $fclose(x_file);
-  /////////////////////////////////////////////////
-
-//loop through all of our kernal values and check the psum for each one
+//loop through all of our input channel values 
   $display("############ Verification Start during Partial Sum Calculation #############");
-  for (kij=0; kij<9; kij=kij+1) begin  // kij loop
+  for (ic=0; ic < len_ic ; ic=ic+1) begin  // kij loop
 
-    case(kij)
-     0: begin w_file_name = "weight_kij0.txt"; p_file_name = "psum_kij0.txt"; end
-     1: begin w_file_name = "weight_kij1.txt"; p_file_name = "psum_kij1.txt"; end
-     2: begin w_file_name = "weight_kij2.txt"; p_file_name = "psum_kij2.txt"; end
-     3: begin w_file_name = "weight_kij3.txt"; p_file_name = "psum_kij3.txt"; end
-     4: begin w_file_name = "weight_kij4.txt"; p_file_name = "psum_kij4.txt"; end
-     5: begin w_file_name = "weight_kij5.txt"; p_file_name = "psum_kij5.txt"; end
-     6: begin w_file_name = "weight_kij6.txt"; p_file_name = "psum_kij6.txt"; end
-     7: begin w_file_name = "weight_kij7.txt"; p_file_name = "psum_kij7.txt"; end
-     8: begin w_file_name = "weight_kij8.txt"; p_file_name = "psum_kij8.txt"; end
+    case(ic)
+     0: begin w_file_name = "weight_os_ic0.txt"; x_file_name = "activation_os_ic0.txt"; end
+     1: begin w_file_name = "weight_os_ic1.txt"; x_file_name = "activation_os_ic1.txt"; end
+     2: begin w_file_name = "weight_os_ic2.txt"; x_file_name = "activation_os_ic2.txt"; end
     endcase
     
+    x_file = $fopen(x_file_name, "r");
+    // Following three lines are to remove the first three comment lines of the file
+    x_scan_file = $fscanf(x_file,"%s", captured_data);
+    x_scan_file = $fscanf(x_file,"%s", captured_data);
+    x_scan_file = $fscanf(x_file,"%s", captured_data);
 
     w_file = $fopen(w_file_name, "r");
     // Following three lines are to remove the first three comment lines of the file
@@ -193,15 +183,28 @@ initial begin
     #0.5 clk = 1'b0;   
     #0.5 clk = 1'b1;   
 
+    
+    /////// Activation data writing to memory ///////
+    A_xmem=0;
+    for (t=0; t<len_nij; t=t+1) begin  
+      #0.5 clk = 1'b0;  x_scan_file = $fscanf(x_file,"%32b", D_xmem); WEN_xmem = 0; CEN_xmem = 0; if (t>0) A_xmem = A_xmem + 1;
+      //$display("Mem addr: %11b", core_instance.xmem_addr);
+      //$display("Mem input: %32b", core_instance.D_xmem);
+      #0.5 clk = 1'b1;   
+    end
 
+    #0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 1; A_xmem = 0;
+    #0.5 clk = 1'b1; 
 
+    $fclose(x_file);
+    /////////////////////////////////////////////////
 
 
     /////// Kernel data writing to memory ///////
 
     A_xmem = 11'b10000000000;
 
-    for (t=0; t<col; t=t+1) begin  
+    for (t=0; t<len_kij; t=t+1) begin  
       #0.5 clk = 1'b0;  w_scan_file = $fscanf(w_file,"%32b", D_xmem); WEN_xmem = 0; CEN_xmem = 0; if (t>0) A_xmem = A_xmem + 1;
       //$display("Mem addr: %11b", core_instance.xmem_addr);
       //$display("Mem input: %32b", core_instance.D_xmem);
@@ -214,34 +217,34 @@ initial begin
     $fclose(w_file);
 
 
-    /////// Kernel data writing to L0 ///////
+    /////// Kernel data writing to IFIFO ///////
     A_xmem = 11'b10000000000;
     /*#0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 0; 
     #0.5 clk = 1'b1; */
-    for (t=0; t<col+3; t=t+1) begin  
+    for (t=0; t<len_nij+3; t=t+1) begin  
       #0.5 clk = 1'b0;   WEN_xmem = 1; CEN_xmem = 0; 
-      if (t>1) begin A_xmem = A_xmem + 1; l0_wr = 1; end
+      if (t>1) begin A_xmem = A_xmem + 1; ififo_wr = 1; end
       if (t>2) begin   
         //$display("Mem addr: %11b", core_instance.xmem_addr);
-        //$display("kij= %1d %1d : l0 W in: %32b",kij,t-3,core_instance.corelet_inst.activation_in);
+        //$display("ic= %1d %1d : ififo W in: %32b",ic,t-3,core_instance.corelet_inst.weight_in);
       end
       #0.5 clk = 1'b1;  
     end
     //$display("SRAM first weight %32b",core_instance.xmem_sram.memory[11'b10000000000]);
-    #0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 1; A_xmem = 0; l0_wr = 0;
+    #0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 1; A_xmem = 0; ififo_wr = 0;
     #0.5 clk = 1'b1; 
 
 
     /////////////////////////////////////
 
-    #0.5 clk = 1'b0;   l0_rd = 1;load = 1;
+    #0.5 clk = 1'b0;   l0_rd = 0;load = 0;
     #0.5 clk = 1'b1;
 
     #0.5 clk = 1'b0; 
     #0.5 clk = 1'b1;
 
-
-    /////// Kernel loading to PEs ///////
+    //not needed for output stationary
+    /*/////// Kernel loading to PEs ///////
     for (t=0; t<2*col-1; t=t+1) begin  
       #0.5 clk = 1'b0; execute=0;  
       if(t>1*col-3)begin l0_rd = 0; load = 0;end 
@@ -252,7 +255,7 @@ initial begin
     end
 
     #0.5 clk = 1'b0;   l0_rd = 0; load = 0; execute=0;
-    #0.5 clk = 1'b1; 
+    #0.5 clk = 1'b1; */
 
     /////////////////////////////////////
   
@@ -278,7 +281,8 @@ initial begin
       if (t>1)  A_xmem = A_xmem + 1;
       if (t>2) begin l0_wr = 1;  
         //$display("Mem addr: %11b", core_instance.xmem_addr);
-        //$display("kij= %1d %1d : l0 A in: %32b",kij,t-3,core_instance.corelet_inst.activation_in);
+        //$display("ic= %1d %1d : l0 A in: %32b",ic,t-3,core_instance.corelet_inst.activation_in);
+        //$display("ififo_wr %b",core_instance.corelet_inst.ififo_wr);
       end
       #0.5 clk = 1'b1;  
     end
@@ -287,14 +291,9 @@ initial begin
     #0.5 clk = 1'b1; 
     /////////////////////////////////////
 
-    p_file = $fopen(p_file_name, "r");
-    // Following three lines are to remove the first three comment lines of the file
-    p_scan_file = $fscanf(p_file,"%s", captured_data);
-    p_scan_file = $fscanf(p_file,"%s", captured_data);
-    p_scan_file = $fscanf(p_file,"%s", captured_data);
 
     /////// Execution ///////
-    #0.5 clk = 1'b0;   l0_rd = 1;
+    #0.5 clk = 1'b0;   l0_rd = 1; ififo_rd = 1;
     #0.5 clk = 1'b1;
     #0.5 clk = 1'b0;
     #0.5 clk = 1'b1;
@@ -303,62 +302,51 @@ initial begin
 
     for (t=0; t<len_nij; t=t+1) begin  
       #0.5 clk = 1'b0;    load = 0; execute=1; 
-      if(t>len_nij-col+1)begin l0_rd = 0; end 
-      else begin l0_rd = 1; end
-      //$display("%2d : MAC in: %32b",t,core_instance.corelet_inst.mac_array_inst.in_w);
+      if(t>len_nij-col+1)begin l0_rd = 0; ififo_rd = 0; end 
+      else begin l0_rd = 1; ififo_rd = 1; end
+      $display("%2d : MAC in: %32b",t,core_instance.corelet_inst.mac_array_inst.in_n);
       //$display("%2d : MAC out: %128b",t,core_instance.corelet_inst.mac_array_inst.out_s);
       #0.5 clk = 1'b1;  
     end
-
-    #0.5 clk = 1'b0;   l0_rd = 0; load = 0; execute=0; 
+    end  // end of kij loop
+    #0.5 clk = 1'b0;   l0_rd = 0; load = 1; execute=0; 
     #0.5 clk = 1'b1; 
-    /////////////////////////////////////
-
-    /*#0.5 clk = 1'b0;   ofifo_rd=1;
-    #0.5 clk = 1'b1; */
+    
+    ////////////////Start moving outputs to the ofifo/////////////////////
+    for (i=0; i<24 ; i=i+1) begin
+      #0.5 clk = 1'b0;
+      $display("%2d : MAC valid: %8b",t,core_instance.corelet_inst.mac_array_inst.valid);
+      $display("%2d : MAC out: %128b",t,core_instance.corelet_inst.mac_array_inst.out_s);
+      #0.5 clk = 1'b1;  
+    end
+    #0.5 clk = 1'b0;   load=0;
+    #0.5 clk = 1'b1; 
 
     //////// OFIFO READ ////////
     // Ideally, OFIFO should be read while execution, but we have enough ofifo
     // depth so we can fetch out after execution.
-    #0.5 clk = 1'b0; WEN_pmem = 0; CEN_pmem = 0; A_pmem = 11'b00000000000 + len_nij*kij;
+    #0.5 clk = 1'b0; WEN_pmem = 0; CEN_pmem = 0; A_pmem = 11'b00000000000 ; load = 1;
     #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0; A_pmem = 11'b00000000001 + len_nij*kij; temp = core_instance.corelet_out;
+    #0.5 clk = 1'b0; A_pmem = 11'b00000000001 ; temp = core_instance.corelet_out;
     #0.5 clk = 1'b1;
-    for (t=0; t<len_nij; t=t+1) begin  
+    for (t=0; t<len_onij; t=t+1) begin  
       #0.5 clk = 1'b0;   ofifo_rd = 1; WEN_pmem = 0; CEN_pmem = 0;  A_pmem = A_pmem + 1; 
-      //$display("OFIFO out: %128b", core_instance.corelet_out);
-      //if(t>0) begin
-      p_scan_file = $fscanf(p_file,"%128b", answer); // reading from out file to answer
-      temp = core_instance.corelet_out;
-      if (temp_q === answer) begin
-         //$display("%d kij: %d-th psum featuremap Data matched! :D", kij, t); 
-      end
-       else begin
-         $display("%1d-th psum featuremap Data ERROR!!", t); 
-         $display("OFIO out: %16b %16b %16b %16b %16b %16b %16b %16b", 
-         temp_q[psum_bw*8-1:psum_bw*7],temp_q[psum_bw*7-1:psum_bw*6],temp_q[psum_bw*6-1:psum_bw*5],temp_q[psum_bw*5-1:psum_bw*4],temp_q[psum_bw*4-1:psum_bw*3],temp_q[psum_bw*3-1:psum_bw*2],temp_q[psum_bw*2-1:psum_bw*1],temp_q[psum_bw*1-1:psum_bw*0]
-         );
-         $display("answer  : %16b %16b %16b %16b %16b %16b %16b %16b", answer[psum_bw*8-1:psum_bw*7],answer[psum_bw*7-1:psum_bw*6],answer[psum_bw*6-1:psum_bw*5],answer[psum_bw*5-1:psum_bw*4],answer[psum_bw*4-1:psum_bw*3],answer[psum_bw*3-1:psum_bw*2],answer[psum_bw*2-1:psum_bw*1],answer[psum_bw*1-1:psum_bw*0]);
-         error = 1;
-       end
-      //end
       #0.5 clk = 1'b1;  
-
     end
-      if(error < 1) begin
+      /*if(error < 1) begin
         $display("%1d kij: psum featuremap Data matched! :D", kij);
       end
-      else error =0;
+      else error =0;*/
     #0.5 clk = 1'b0;   ofifo_rd = 0;  WEN_pmem = 1; CEN_pmem = 1; A_pmem = 0;
     #0.5 clk = 1'b1; 
     /////////////////////////////////////
-    $fclose(p_file);
+    //$fclose(p_file);
 
-  end  // end of kij loop
+  
 //kernal values are all computed now we sum them up to get our output
 
   ////////// Accumulation /////////
-  out_file = $fopen("out.txt", "r");  
+  out_file = $fopen("out_os.txt", "r");  
 
   // Following three lines are to remove the first three comment lines of the file
   out_scan_file = $fscanf(out_file,"%s", answer); 
@@ -371,24 +359,11 @@ initial begin
 
   $display("############ Verification Start during accumulation #############"); 
 //$display("SRAM eigth PSUM %32b",core_instance.pmem_sram.memory[11'b00000001000]);
+  A_pmem=0; CEN_pmem = 0; WEN_pmem = 1;
   for (i=0; i<len_onij; i=i+1) begin 
 
-    A_pmem=len_nij*0 + (i/len_oni)*len_ni + i%len_oni + (0/len_ki)*len_ni + 0%len_ki;
+    A_pmem=A_pmem + 1;
 
-    for(k=0; k < len_kij+3; k=k+1)begin//kernal loop
-          #0.5 clk = 1'b0;  CEN_pmem = 0; WEN_pmem = 1;
-          if(k>1 && k<len_kij+2) begin 
-            A_pmem=len_nij*(k-1) + (i/len_oni)*len_ni + i%len_oni + ((k-1)/len_ki)*len_ni + (k-1)%len_ki;
-            acc= 1;
-            //$display("%2d-th,k=%1d Mem Address %11b", i,k-2, core_instance.pmem_addr);
-          end
-          //if(k>2)begin $display("%2d-th,k=%1d SFP In %128b", i,k-3, core_instance.sfp_in);end
-          #0.5 clk = 1'b1;
-    end
-    #0.5 clk = 1'b0; CEN_pmem = 1; WEN_pmem = 1;
-    #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0; CEN_pmem = 1; WEN_pmem = 1; acc=0;
-    #0.5 clk = 1'b1;
      out_scan_file = $fscanf(out_file,"%128b", answer); // reading from out file to answer
        if (sfp_out == answer)
          $display("%2d-th output featuremap Data matched! :D", i); 
@@ -460,6 +435,7 @@ always @ (posedge clk) begin
    execute_q  <= execute;
    load_q     <= load;
    temp_q     <= temp;
+   mode_q     <= mode;
 end
 
 

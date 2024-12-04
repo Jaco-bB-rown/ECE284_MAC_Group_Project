@@ -6,6 +6,7 @@ module corelet #(
 )(
     input wire clk,
     input wire reset,
+    input wire mode,
     input wire [bw*row-1:0] activation_in,
     input wire [bw*row-1:0] weight_in,
     input wire [psum_bw*col-1:0] sfp_in,
@@ -18,27 +19,31 @@ module corelet #(
     // Internal signals
     wire [psum_bw*col-1:0] mac_array_out;
     wire [col-1:0] mac_array_valid;
-    wire l0_fifo_full, l0_fifo_ready;
-    wire [bw*row-1:0] l0_fifo_out;
-    wire [psum_bw*col-1:0] mac_array_in_n;//not used in this part
+    wire l0_fifo_full, l0_fifo_ready, ififo_full, ififo_ready;
+    wire [bw*row-1:0] l0_fifo_out, ififo_out;
+    wire [psum_bw*col-1:0] mac_array_in_n, mac_array_in_n_temp;
     wire ofifo_full, ofifo_ready, ofifo_valid;
     wire [psum_bw*col-1:0] ofifo_out, sfp_out;
 
     // Extract control signals from inst
     wire ofifo_rd ;
-    wire ififo_wr ;//ififo not present in this part
+    wire ififo_wr ;
     wire ififo_rd;
     wire l0_rd ;
     wire l0_wr ;
+    wire acc ;
 
+    assign acc = inst[7];
     assign ofifo_rd = inst[6];
-    assign ififo_wr = inst[5];//ififo not present in this part
+    assign ififo_wr = inst[5];
     assign ififo_rd = inst[4];
     assign l0_rd = inst[3];
     assign l0_wr = inst[2];
     assign o_ready = ofifo_ready;
-    assign corelet_out = inst[7] ? sfp_out : ofifo_out;
-    // L0 FIFO
+    assign corelet_out = (acc && !mode) ? sfp_out : ofifo_out;// output from sfp only if we are accumulating and if we arent o.s.
+    assign mac_array_in_n = mode ? mac_array_in_n_temp : 0;//input from ififo if we are o.s.
+
+    // L0 FIFO for act
     l0_fifo #(.bw(bw), .row(row)) l0_fifo_inst (
         .clk(clk),
         .in(activation_in),
@@ -48,6 +53,17 @@ module corelet #(
         .o_full(l0_fifo_full),
         .reset(reset),
         .o_ready(l0_fifo_ready)
+    );
+    //IFIFO for weights
+    ififo #(.bw(bw), .row(row))   ififo_inst(
+        .clk(clk),
+        .in(weight_in),
+        .out(ififo_out),
+        .rd(ififo_rd),
+        .wr(ififo_wr),
+        .o_full(ififo_fifo_full),
+        .reset(reset),
+        .o_ready(ififo_fifo_ready)
     );
 
     // OFIFO
@@ -71,7 +87,8 @@ module corelet #(
         .in_w(l0_fifo_out),
         .in_n(mac_array_in_n),
         .inst_w(inst[1:0]),
-        .valid(mac_array_valid)
+        .valid(mac_array_valid),
+        .mode(mode)
     );
 
     sfp #(.bw(psum_bw), .col(col)) sfp_row  (
@@ -80,6 +97,11 @@ module corelet #(
         .in(sfp_in),
         .out(sfp_out)
     );
+    genvar i;
+    generate for(i=0;i<col;i=i+1) begin//pass sign extended input into our mac_array
+        assign mac_array_in_n_temp[(i+1)*psum_bw-1:i*psum_bw] = { {psum_bw-bw{ififo_out[bw-1]}}, ififo_out };
+    end
+    endgenerate
     // Output
     //assign psum_out = ofifo_out;
     //assign o_ready = l0_fifo_ready;

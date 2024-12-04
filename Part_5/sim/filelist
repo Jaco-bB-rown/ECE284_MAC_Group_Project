@@ -8,7 +8,9 @@
 ../verilog/FIFOs/fifo_mux_16_1.v
 ../verilog/FIFOs/ofifo.v
 ../verilog/FIFOs/l0_fifo.v
+../verilog/FIFOs/ififo.v
 ../verilog/SRAMs/sram.v
 ../verilog/sfp.v
 ../verilog/corelet.v
 ../verilog/core.v
+../verilog/core_tb.v
