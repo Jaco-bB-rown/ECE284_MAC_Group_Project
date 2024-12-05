@@ -248,22 +248,6 @@ initial begin
     #0.5 clk = 1'b0; 
     #0.5 clk = 1'b1;
 
-    //not needed for output stationary
-    /*/////// Kernel loading to PEs ///////
-    for (t=0; t<2*col-1; t=t+1) begin  
-      #0.5 clk = 1'b0; execute=0;  
-      if(t>1*col-3)begin l0_rd = 0; load = 0;end 
-      else begin l0_rd = 1; load = 1;end
-      //$display("Kernal loading: %32b and load= %16b",core_instance.corelet_inst.mac_array_inst.in_w,core_instance.corelet_inst.mac_array_inst.inst_w_temp);
-       
-      #0.5 clk = 1'b1;  
-    end
-
-    #0.5 clk = 1'b0;   l0_rd = 0; load = 0; execute=0;
-    #0.5 clk = 1'b1; */
-
-    /////////////////////////////////////
-  
 
 
     ////// provide some intermission to clear up the kernel loading ///
@@ -321,14 +305,9 @@ initial begin
       //$display("%2d : MAC in_w: %32b",t,core_instance.corelet_inst.mac_array_inst.in_w);
       #0.5 clk = 1'b1;  
     end
-    ////// provide some intermission to clear up the execution ///
+
     #0.5 clk = 1'b0;  load = 0; l0_rd = 0; execute=0; ififo_rd = 0;
     #0.5 clk = 1'b1;  
-    /*for (i=0; i<10 ; i=i+1) begin
-      #0.5 clk = 1'b0;
-      #0.5 clk = 1'b1;  
-    end*/
-
 
   end  // end of kij loop
 
@@ -336,10 +315,6 @@ initial begin
   #0.5 clk = 1'b1; 
   #0.5 clk = 1'b0; 
   #0.5 clk = 1'b1; 
-  /*for (i=0; i<8 ; i=i+1) begin
-    #0.5 clk = 1'b0;
-      #0.5 clk = 1'b1;  
-  end*/
     
 ////////////////Start moving outputs to the ofifo/////////////////////
   for (i=0; i<len_onij ; i=i+1) begin
@@ -410,24 +385,6 @@ initial begin
        end
     #0.5 clk = 1'b1;
    
- 
-    //#0.5 clk = 1'b0; reset = 1;
-    //#0.5 clk = 1'b1;  
-    //#0.5 clk = 1'b0; reset = 0; 
-    //#0.5 clk = 1'b1;  
-
-    /*for (j=0; j<len_kij+1; j=j+1) begin 
-
-      #0.5 clk = 1'b0;   
-        if (j<len_kij) begin CEN_pmem = 0; WEN_pmem = 1; acc_scan_file = $fscanf(acc_file,"%11b", A_pmem); end
-                       else  begin CEN_pmem = 1; WEN_pmem = 1; end
-
-        if (j>0)  acc = 1;  
-      #0.5 clk = 1'b1;   
-    end
-
-    #0.5 clk = 1'b0; acc = 0;
-    #0.5 clk = 1'b1; */
   end
 
 
@@ -437,7 +394,7 @@ initial begin
 
   end
 
-  //$fclose(acc_file);
+  $fclose(out_file);
   //////////////////////////////////
 
   for (t=0; t<10; t=t+1) begin  

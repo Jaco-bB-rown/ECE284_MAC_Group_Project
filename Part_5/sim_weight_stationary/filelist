@@ -13,4 +13,4 @@
 ../verilog/sfp.v
 ../verilog/corelet.v
 ../verilog/core.v
-core_tb_weight_stationary.v
+../verilog/core_tb_weight_stationary.v

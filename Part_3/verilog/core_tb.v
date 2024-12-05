@@ -314,8 +314,6 @@ initial begin
     #0.5 clk = 1'b1; 
     /////////////////////////////////////
 
-    /*#0.5 clk = 1'b0;   ofifo_rd=1;
-    #0.5 clk = 1'b1; */
 
     //////// OFIFO READ ////////
     // Ideally, OFIFO should be read while execution, but we have enough ofifo
@@ -408,19 +406,6 @@ initial begin
     #0.5 clk = 1'b1;  
     #0.5 clk = 1'b0; reset = 0; 
     #0.5 clk = 1'b1;  
-
-    /*for (j=0; j<len_kij+1; j=j+1) begin 
-
-      #0.5 clk = 1'b0;   
-        if (j<len_kij) begin CEN_pmem = 0; WEN_pmem = 1; acc_scan_file = $fscanf(acc_file,"%11b", A_pmem); end
-                       else  begin CEN_pmem = 1; WEN_pmem = 1; end
-
-        if (j>0)  acc = 1;  
-      #0.5 clk = 1'b1;   
-    end
-
-    #0.5 clk = 1'b0; acc = 0;
-    #0.5 clk = 1'b1; */
   end
 
 
@@ -430,7 +415,7 @@ initial begin
 
   end
 
-  //$fclose(acc_file);
+  $fclose(out_file);
   //////////////////////////////////
 
   for (t=0; t<10; t=t+1) begin  
