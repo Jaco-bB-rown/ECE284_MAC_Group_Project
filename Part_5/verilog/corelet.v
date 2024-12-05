@@ -56,7 +56,7 @@ module corelet #(
         .o_ready(l0_fifo_ready)
     );
     //IFIFO for weights
-    l0_fifo #(.bw(bw), .row(row))   ififo_inst(
+    l0_fifo #(.bw(bw), .row(col))   ififo_inst(
         .clk(clk),
         .in(weight_in),
         .out(ififo_out),

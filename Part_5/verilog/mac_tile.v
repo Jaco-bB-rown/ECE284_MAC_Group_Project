@@ -1,6 +1,6 @@
 // Created by prof. Mingu Kang @VVIP Lab in UCSD ECE department
 // Please do not spread this code without permission 
-module mac_tile (clk, out_s, in_w, out_e, in_n, inst_w, inst_e, reset, mode_select,output_en);
+module mac_tile (clk, out_s, in_w, out_e, in_n, inst_w, inst_e, reset, mode_select, output_en);
 
 parameter bw = 4;
 parameter psum_bw = 16;
@@ -72,7 +72,7 @@ always@(posedge clk) begin
                                 if(output_en && load_ready_q)begin
                                         a_q <= 0;           // Feature map (activation) input
                                         b_q <= 0;           // Load weight
-                                        c_q <= mac_out;     // Output from MAC
+                                        c_q <= in_n;     // Output from MAC
                                         //output_select <= 0;
                                         load_ready_q <= 1'b0;
                                 end

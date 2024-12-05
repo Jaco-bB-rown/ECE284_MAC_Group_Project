@@ -107,7 +107,7 @@ core  #(.bw(bw), .psum_bw(psum_bw), .col(col), .row(row)) core_instance (
   .D_xmem(D_xmem_q), 
   .sfp_out(sfp_out), 
 	.reset(reset)); 
-
+  
 
 initial begin 
 
@@ -230,7 +230,8 @@ initial begin
       if (t>1) begin A_xmem = A_xmem + 1; ififo_wr = 1; end
       if (t>2) begin   
         //$display("Mem addr: %11b", core_instance.xmem_addr);
-        //$display("ic= %1d %1d : ififo W in: %32b",ic,t-3,core_instance.corelet_inst.weight_in);
+        $display("ic= %1d %1d : ififo W in: %32b",ic,t-3,core_instance.corelet_inst.weight_in);
+        $display("ififo_wr %b",core_instance.corelet_inst.ififo_wr);
       end
       #0.5 clk = 1'b1;  
     end
@@ -282,11 +283,11 @@ initial begin
     A_xmem = 0;
     for (t=0; t<len_nij+3; t=t+1) begin  
       #0.5 clk = 1'b0;   WEN_xmem = 1; CEN_xmem = 0; 
-      if (t>1)  A_xmem = A_xmem + 1;
-      if (t>2) begin l0_wr = 1;  
+      if (t>1)  begin A_xmem = A_xmem + 1;  l0_wr = 1; end
+      if (t>2) begin   l0_wr = 1;
         //$display("Mem addr: %11b", core_instance.xmem_addr);
-        $display("ic= %1d %1d : l0 A in: %32b",ic,t-3,core_instance.corelet_inst.activation_in);
-        $display("ififo_wr %b",core_instance.corelet_inst.ififo_wr);
+        //$display("ic= %1d %1d : l0 A in: %32b",ic,t-3,core_instance.corelet_inst.activation_in);
+        //$display("l0_wr %b",core_instance.corelet_inst.l0_wr);
       end
       #0.5 clk = 1'b1;  
     end
@@ -297,70 +298,73 @@ initial begin
 
 
     /////// Execution ///////    
-    #0.5 clk = 1'b0;   l0_rd = 1;
+    #0.5 clk = 1'b0;  ififo_rd = 1;l0_rd = 1; execute = 1;
     #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0;   l0_rd = 1;
-    #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0;  ififo_rd = 1;
-    #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0; 
+    #0.5 clk = 1'b0; //ififo_rd = 1;l0_rd = 1;
     #0.5 clk = 1'b1;
 
-    for (t=0; t<len_nij; t=t+1) begin  
-      #0.5 clk = 1'b0;    load = 0; execute=1; 
-      if(t>len_nij-col)begin l0_rd = 0; ififo_rd = 0; end 
-      else begin l0_rd = 1; ififo_rd = 1; end
+    for (t=0; t<2*len_nij; t=t+1) begin  
+      #0.5 clk = 1'b0;    load = 0; // 
+      
+      if(t>len_nij-1)      begin l0_rd = 0; ififo_rd = 0; execute=0; end 
+      else if(t>len_nij-3) begin l0_rd = 1; ififo_rd = 1; execute=0; end
+      else                 begin l0_rd = 1; ififo_rd = 1; execute=1; end
+      $display("%2d : ififo_rd %b",t,core_instance.corelet_inst.ififo_rd);
+      $display("%2d : inst %16b",t,core_instance.corelet_inst.mac_array_inst.inst_w_temp);
       $display("%2d : MAC in_n: %32b",t,core_instance.corelet_inst.ififo_out);
       $display("%2d : MAC in_n: %128b",t,core_instance.corelet_inst.mac_array_inst.in_n);
       $display("%2d : MAC in_w: %32b",t,core_instance.corelet_inst.mac_array_inst.in_w);
       #0.5 clk = 1'b1;  
     end
     ////// provide some intermission to clear up the execution ///
-    #0.5 clk = 1'b0;  load = 0; l0_rd = 0;execute=0;
+    #0.5 clk = 1'b0;  load = 0; l0_rd = 0;execute=0;ififo_rd = 0;
     #0.5 clk = 1'b1;  
-    for (i=0; i<16 ; i=i+1) begin
+    /*for (i=0; i<10 ; i=i+1) begin
       #0.5 clk = 1'b0;
       #0.5 clk = 1'b1;  
-    end
+    end*/
 
 
   end  // end of kij loop
-    #0.5 clk = 1'b0;   l0_rd = 0; load = 0; execute=0; output_en=1; 
-    #0.5 clk = 1'b1; 
-    
-    ////////////////Start moving outputs to the ofifo/////////////////////
-    for (i=0; i<32 ; i=i+1) begin
-      #0.5 clk = 1'b0;
-      //if(i>col) load = 0;
-      $display("%2d : MAC valid: %8b",i,core_instance.corelet_inst.mac_array_inst.valid);
-      $display("%2d : MAC out: %128b",i,core_instance.corelet_inst.mac_array_inst.out_s);
-      $display("%2d : MAC out of some row: %128b",i,core_instance.corelet_inst.mac_array_inst.temp[psum_bw*9*col-1:psum_bw*8*col]);
-      #0.5 clk = 1'b1;  
-    end
-    #0.5 clk = 1'b0;   load=0; output_en=0;
-    #0.5 clk = 1'b1; 
 
-    //////// OFIFO READ ////////
-    // Ideally, OFIFO should be read while execution, but we have enough ofifo
-    // depth so we can fetch out after execution.
-    #0.5 clk = 1'b0; WEN_pmem = 0; CEN_pmem = 0; A_pmem = len_onij ; load = 0;
-    #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0; A_pmem = len_onij-1 ; temp = core_instance.corelet_out;
-    #0.5 clk = 1'b1;
-    for (t=0; t<len_onij; t=t+1) begin  
-      #0.5 clk = 1'b0;   ofifo_rd = 1; WEN_pmem = 0; CEN_pmem = 0;  A_pmem = A_pmem - 1; 
-      $display("Mem addr: %11b", core_instance.pmem_addr);
-      //$display("Mem input: %32b", core_instance._xmem);
+  #0.5 clk = 1'b0;   l0_rd = 0; load = 0; execute=0;  output_en=1;
+  #0.5 clk = 1'b1; 
+  #0.5 clk = 1'b0; 
+  #0.5 clk = 1'b1; 
+  /*for (i=0; i<8 ; i=i+1) begin
+    #0.5 clk = 1'b0;
       #0.5 clk = 1'b1;  
-    end
-      /*if(error < 1) begin
-        $display("%1d kij: psum featuremap Data matched! :D", kij);
-      end
-      else error =0;*/
-    #0.5 clk = 1'b0;   ofifo_rd = 0;  WEN_pmem = 1; CEN_pmem = 1; A_pmem = 0;
-    #0.5 clk = 1'b1; 
-    /////////////////////////////////////
-    //$fclose(p_file);
+  end*/
+    
+////////////////Start moving outputs to the ofifo/////////////////////
+  for (i=0; i<len_onij ; i=i+1) begin
+    #0.5 clk = 1'b0;
+    //if(i>col) load = 0;
+    $display("%2d : MAC valid: %8b",i,core_instance.corelet_inst.mac_array_inst.valid);
+    $display("%2d : MAC out: %128b",i,core_instance.corelet_inst.mac_array_inst.out_s);
+    $display("%2d : MAC out7 %128b",i,core_instance.corelet_inst.mac_array_inst.temp[psum_bw*5*col-1:psum_bw*4*col]);
+    #0.5 clk = 1'b1;  
+  end
+  #0.5 clk = 1'b0;   load=0; output_en=0;
+  #0.5 clk = 1'b1; 
+
+//////// OFIFO READ ////////
+  // Ideally, OFIFO should be read while execution, but we have enough ofifo
+  // depth so we can fetch out after execution.
+  #0.5 clk = 1'b0; WEN_pmem = 0; CEN_pmem = 0; A_pmem = len_onij ; load = 0;ofifo_rd = 1;
+  #0.5 clk = 1'b1;
+  #0.5 clk = 1'b0; A_pmem = len_onij-1;
+  #0.5 clk = 1'b1;
+  for (t=0; t<len_onij; t=t+1) begin  
+    #0.5 clk = 1'b0;    WEN_pmem = 0; CEN_pmem = 0;  A_pmem = A_pmem - 1; 
+    //$display("Mem addr: %11b", core_instance.pmem_addr);
+    //$display("Mem input: %32b", core_instance.pmem_in);
+    #0.5 clk = 1'b1;  
+  end
+
+  #0.5 clk = 1'b0;   ofifo_rd = 0;  WEN_pmem = 1; CEN_pmem = 1; A_pmem = 0;
+     
+  /////////////////////////////////////
 
   
 //kernal values are all computed now we sum them up to get our output
@@ -378,10 +382,13 @@ initial begin
 
 
   $display("############ Verification Start during accumulation #############"); 
-//$display("SRAM eigth PSUM %32b",core_instance.pmem_sram.memory[11'b00000001000]);
-  A_pmem=0; CEN_pmem = 0; WEN_pmem = 1;
+$display("SRAM first output %128b",core_instance.pmem_sram.memory[11'b00000000000]);
+  #0.5 clk = 1'b0 ;A_pmem=0; CEN_pmem = 0; WEN_pmem = 1;
+  #0.5 clk = 1'b1;
+  #0.5 clk = 1'b0; A_pmem=1; CEN_pmem = 0; WEN_pmem = 1;
+  #0.5 clk = 1'b1;
   for (i=0; i<len_onij; i=i+1) begin 
-
+    #0.5 clk = 1'b0;
     A_pmem=A_pmem + 1;
 
      out_scan_file = $fscanf(out_file,"%128b", answer); // reading from out file to answer
@@ -396,13 +403,13 @@ initial begin
 
          error = 1;
        end
-    
+    #0.5 clk = 1'b1;
    
  
-    #0.5 clk = 1'b0; reset = 1;
-    #0.5 clk = 1'b1;  
-    #0.5 clk = 1'b0; reset = 0; 
-    #0.5 clk = 1'b1;  
+    //#0.5 clk = 1'b0; reset = 1;
+    //#0.5 clk = 1'b1;  
+    //#0.5 clk = 1'b0; reset = 0; 
+    //#0.5 clk = 1'b1;  
 
     /*for (j=0; j<len_kij+1; j=j+1) begin 
 
