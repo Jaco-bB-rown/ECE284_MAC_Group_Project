@@ -1,5 +1,5 @@
 $date
-	Wed Dec 04 22:44:57 2024
+	Wed Dec 04 23:09:13 2024
 $end
 $version
 	Icarus Verilog
@@ -140,28 +140,28 @@ $var parameter 32 ;" bw $end
 $var parameter 32 <" col $end
 $var parameter 32 =" psum_bw $end
 $var parameter 32 >" row $end
-$scope begin genblk1[0] $end
+$scope begin weight_sign_ext[0] $end
 $var parameter 2 ?" i $end
 $upscope $end
-$scope begin genblk1[1] $end
+$scope begin weight_sign_ext[1] $end
 $var parameter 2 @" i $end
 $upscope $end
-$scope begin genblk1[2] $end
+$scope begin weight_sign_ext[2] $end
 $var parameter 3 A" i $end
 $upscope $end
-$scope begin genblk1[3] $end
+$scope begin weight_sign_ext[3] $end
 $var parameter 3 B" i $end
 $upscope $end
-$scope begin genblk1[4] $end
+$scope begin weight_sign_ext[4] $end
 $var parameter 4 C" i $end
 $upscope $end
-$scope begin genblk1[5] $end
+$scope begin weight_sign_ext[5] $end
 $var parameter 4 D" i $end
 $upscope $end
-$scope begin genblk1[6] $end
+$scope begin weight_sign_ext[6] $end
 $var parameter 4 E" i $end
 $upscope $end
-$scope begin genblk1[7] $end
+$scope begin weight_sign_ext[7] $end
 $var parameter 4 F" i $end
 $upscope $end
 $scope module ififo_inst $end

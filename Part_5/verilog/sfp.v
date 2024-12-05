@@ -19,7 +19,7 @@ module sfp #(
                     acc[bw*(i+1)-1 : bw*i] <= 0;
                 end else begin
                     acc[bw*(i+1)-1 : bw*i] <= acc[bw*(i+1)-1 : bw*i] + in[bw*(i+1)-1 : bw*i];
-                    out[bw*(i+1)-1 : bw*i] <= (acc[bw*(i+1)-1] == 1'b1) ? 0 : acc[bw*(i+1)-1 : bw*i];
+                    out[bw*(i+1)-1 : bw*i] <= (acc[bw*(i+1)-1] == 1'b1) ? 16'b0 : acc[bw*(i+1)-1 : bw*i];
                 end
             end
         end

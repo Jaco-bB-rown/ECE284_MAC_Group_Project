@@ -100,7 +100,7 @@ module corelet #(
         .out(sfp_out)
     );
     genvar i;
-    generate for(i=0;i<col;i=i+1) begin//pass sign extended input into our mac_array
+    generate for(i=0;i<col;i=i+1) begin : weight_sign_ext//pass sign extended input into our mac_array
         assign mac_array_in_n_temp[(i+1)*psum_bw-1:i*psum_bw] = { {psum_bw-bw{ififo_out[bw*(i+1)-1]}}, ififo_out[bw*(i+1)-1:bw*i] };
     end
     endgenerate
