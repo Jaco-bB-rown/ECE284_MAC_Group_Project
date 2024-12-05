@@ -17,7 +17,7 @@ module core #(
     wire CEN_xmem, CEN_pmem;
     wire WEN_xmem, WEN_pmem;
     wire [10:0] xmem_addr, pmem_addr;
-    wire mode, acc, ififo_wr;
+    wire mode, acc, ififo_wr, o_valid;
 
     wire [row*bw-1:0] act_in,weight_in; // weight_in not used for weight stationary// dummy variable rn
     wire [col*psum_bw-1:0] corelet_out, pmem_in, pmem_out, sfp_in;

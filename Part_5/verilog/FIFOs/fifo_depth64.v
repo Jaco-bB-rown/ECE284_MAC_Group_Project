@@ -129,7 +129,7 @@ module fifo_depth64 (rd_clk, wr_clk, in, out, rd, wr, o_full, o_empty, reset);
       rd_ptr <= 7'b0000000;
    end
    else if ((rd == 1) && (empty == 0)) begin
-      rd_ptr <= rd_ptr + 1;
+      rd_ptr <= rd_ptr + 7'b0000001;
    end
  end
 
@@ -140,7 +140,7 @@ module fifo_depth64 (rd_clk, wr_clk, in, out, rd, wr, o_full, o_empty, reset);
    end
    else begin 
       if ((wr == 1) && (full == 0)) begin
-        wr_ptr <= wr_ptr + 1;
+        wr_ptr <= wr_ptr + 7'b0000001;
       end
 
       if (wr == 1) begin

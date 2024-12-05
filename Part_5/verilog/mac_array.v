@@ -30,14 +30,14 @@ module mac_array (clk, reset, out_s, in_w, in_n, inst_w, valid, mode, output_en)
   genvar i;
  
   assign out_s = temp[psum_bw*col*9-1:psum_bw*col*8];
-  assign temp[psum_bw*col*1-1:psum_bw*col*0] = in_n;
+  assign temp[psum_bw*col-1:0] = in_n;
   assign valid = valid_temp[row*col-1:row*col-8];
 
   //assign mux_weights = mode ? in_w : stationary_weights;
   //assign mux_psums = mode ? stationary_psums : in_n;
   
   generate for (i=1; i < row+1 ; i=i+1) begin : row_num
-      mac_row #(.bw(bw), .psum_bw(psum_bw)) mac_row_instance (
+      mac_row #(.bw(bw), .psum_bw(psum_bw), .col(col)) mac_row_instance (
          .clk(clk),
          .reset(reset),
 	       .in_w(in_w[bw*i-1:bw*(i-1)]),

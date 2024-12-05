@@ -390,7 +390,7 @@ initial begin
     #0.5 clk = 1'b0; CEN_pmem = 1; WEN_pmem = 1; acc=0;
     #0.5 clk = 1'b1;
      out_scan_file = $fscanf(out_file,"%128b", answer); // reading from out file to answer
-       if (sfp_out == answer)
+       if (sfp_out === answer)
          $display("%2d-th output featuremap Data matched! :D", i); 
        else begin
          $display("%2d-th output featuremap Data ERROR!!", i); 

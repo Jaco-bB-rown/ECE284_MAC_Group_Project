@@ -62,9 +62,9 @@ module corelet #(
         .out(ififo_out),
         .rd(ififo_rd),
         .wr(ififo_wr),
-        .o_full(ififo_fifo_full),
+        .o_full(ififo_full),
         .reset(reset),
-        .o_ready(ififo_fifo_ready)
+        .o_ready(ififo_ready)
     );
 
     // OFIFO

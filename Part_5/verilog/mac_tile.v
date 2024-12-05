@@ -30,6 +30,7 @@ wire [psum_bw-1:0]b_q_signext;
 assign b_q_signext = { {psum_bw-bw{b_q[bw-1]}}, b_q };
 assign out_e = a_q;
 assign inst_e = inst_q;
+
 assign out_s = (mode_select && !output_en) ? b_q_signext : mac_out;
 
 mac #(.bw(bw), .psum_bw(psum_bw)) mac_instance (
@@ -46,6 +47,7 @@ always@(posedge clk) begin
                 a_q <= 0;
                 b_q <= 0;
                 c_q <= 0;
+
         end
         else begin
                 inst_q[1] <= inst_w[1]; //always accept
@@ -61,34 +63,15 @@ always@(posedge clk) begin
                                 end
                         end
                         else begin// Output-Stationary Mode: Send output to MAC
-                                //this if not used for O.s.
-                                /*if (inst_w[0] == 1'b1 && load_ready_q == 1'b1) begin//load signal now defines when we output
-                                        a_q <= 0;           // Feature map (activation) input
-                                        b_q <= 0;           // Load weight
-                                        c_q <= mac_out;     // Output from MAC
-                                        output_select <= 0;
-                                        load_ready_q <= 1'b0;
-                                end*/
-                                if(output_en && load_ready_q)begin
-                                        a_q <= 0;           // Feature map (activation) input
-                                        b_q <= 0;           // Load weight
-                                        c_q <= in_n;     // Output from MAC
-                                        //output_select <= 0;
-                                        load_ready_q <= 1'b0;
-                                end
-                                else if(output_en)begin
-                                        c_q <= in_n;
-                                        a_q <= 0;           // Feature map (activation) input
-                                        b_q <= 0;           // Load weight
-                                        //output_select <= 0;
-                                end
-                                else begin
-                                        //output_select <= 1;
-                                        c_q <= mac_out;     // Output from MAC
-                                        a_q <= in_w;        // Feature map (activation) input
-                                        b_q <= in_n;        // Load weight
-                                end
+                                c_q <= mac_out;     // Output from MAC
+                                a_q <= in_w;        // Feature map (activation) input
+                                b_q <= in_n[bw-1:0];        // Load weight
                         end
+                end
+                else if(output_en && mode_select)begin
+                        c_q <= in_n;
+                        a_q <= 0;           // Feature map (activation) input
+                        b_q <= 0;           // Load weight
                 end
 
                 if(load_ready_q == 1'b0) begin //then pass inst next clock

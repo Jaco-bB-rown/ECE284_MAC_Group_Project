@@ -79,8 +79,8 @@ integer out_file, out_scan_file ; // file_handler
 integer captured_data; 
 integer t, i, j, k, ic;
 integer error;
-reg [psum_bw*col-1:0]temp;
-reg [psum_bw*col-1:0]temp_q;
+reg [bw*col-1:0]temp;
+reg [bw*col-1:0]temp_q;
 
 assign inst_q[35] = output_en_q;
 assign inst_q[34] = mode_q;
@@ -148,11 +148,23 @@ initial begin
   #0.5 clk = 1'b0;   
   #0.5 clk = 1'b1;   
   /////////////////////////
+    #0.5 clk = 1'b0;   reset = 1;
+    #0.5 clk = 1'b1; 
 
+    for (i=0; i<10 ; i=i+1) begin
+      #0.5 clk = 1'b0;
+      #0.5 clk = 1'b1;  
+    end
+
+    #0.5 clk = 1'b0;   reset = 0;
+    #0.5 clk = 1'b1; 
+
+    #0.5 clk = 1'b0;   
+    #0.5 clk = 1'b1;  
 
 
 //loop through all of our input channel values 
-  $display("############ Verification Start during Partial Sum Calculation #############");
+  //$display("############ Verification Start during Partial Sum Calculation #############");
   for (ic=0; ic < len_ic ; ic=ic+1) begin  // kij loop
 
     case(ic)
@@ -173,19 +185,7 @@ initial begin
     w_scan_file = $fscanf(w_file,"%s", captured_data);
     w_scan_file = $fscanf(w_file,"%s", captured_data);
 
-    #0.5 clk = 1'b0;   reset = 1;
-    #0.5 clk = 1'b1; 
-
-    for (i=0; i<10 ; i=i+1) begin
-      #0.5 clk = 1'b0;
-      #0.5 clk = 1'b1;  
-    end
-
-    #0.5 clk = 1'b0;   reset = 0;
-    #0.5 clk = 1'b1; 
-
-    #0.5 clk = 1'b0;   
-    #0.5 clk = 1'b1;   
+ 
 
     
     /////// Activation data writing to memory ///////
@@ -225,13 +225,13 @@ initial begin
     A_xmem = 11'b10000000000;
     /*#0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 0; 
     #0.5 clk = 1'b1; */
-    for (t=0; t<len_nij+3; t=t+1) begin  
+    for (t=0; t<len_kij+3; t=t+1) begin  
       #0.5 clk = 1'b0;   WEN_xmem = 1; CEN_xmem = 0; 
       if (t>1) begin A_xmem = A_xmem + 1; ififo_wr = 1; end
       if (t>2) begin   
         //$display("Mem addr: %11b", core_instance.xmem_addr);
-        $display("ic= %1d %1d : ififo W in: %32b",ic,t-3,core_instance.corelet_inst.weight_in);
-        $display("ififo_wr %b",core_instance.corelet_inst.ififo_wr);
+        //$display("ic= %1d %1d : ififo W in: %32b",ic,t-3,core_instance.corelet_inst.weight_in);
+        //$display("ififo_wr %b",core_instance.corelet_inst.ififo_wr);
       end
       #0.5 clk = 1'b1;  
     end
@@ -303,21 +303,26 @@ initial begin
     #0.5 clk = 1'b0; //ififo_rd = 1;l0_rd = 1;
     #0.5 clk = 1'b1;
 
-    for (t=0; t<2*len_nij; t=t+1) begin  
+    for (t=0; t<3*row-3; t=t+1) begin  
       #0.5 clk = 1'b0;    load = 0; // 
-      
+      l0_rd = 1; ififo_rd = 1; execute=1;
       if(t>len_nij-1)      begin l0_rd = 0; ififo_rd = 0; execute=0; end 
       else if(t>len_nij-3) begin l0_rd = 1; ififo_rd = 1; execute=0; end
       else                 begin l0_rd = 1; ififo_rd = 1; execute=1; end
-      $display("%2d : ififo_rd %b",t,core_instance.corelet_inst.ififo_rd);
-      $display("%2d : inst %16b",t,core_instance.corelet_inst.mac_array_inst.inst_w_temp);
-      $display("%2d : MAC in_n: %32b",t,core_instance.corelet_inst.ififo_out);
-      $display("%2d : MAC in_n: %128b",t,core_instance.corelet_inst.mac_array_inst.in_n);
-      $display("%2d : MAC in_w: %32b",t,core_instance.corelet_inst.mac_array_inst.in_w);
+      //$display("%2d : ififo_rd %b",t,core_instance.corelet_inst.ififo_rd);
+      //$display("%2d : inst %16b",t,core_instance.corelet_inst.mac_array_inst.inst_w_temp);
+      //$display("%2d : MAC in_n: %32b",t,core_instance.corelet_inst.ififo_out);
+      //temp = core_instance.corelet_inst.ififo_out;
+      //$display("%2d : MAC in_n: %d %d %d %d %d %d %d %d",t,$signed(temp[8*bw-1:7*bw]),$signed(temp[7*bw-1:6*bw]),$signed(temp[6*bw-1:5*bw]),$signed(temp[5*bw-1:4*bw]),$signed(temp[4*bw-1:3*bw]),$signed(temp[3*bw-1:2*bw]),$signed(temp[2*bw-1:1*bw]),$signed(temp[1*bw-1:0*bw]));
+      //$display("%2d : MAC in_n: %128b",t,core_instance.corelet_inst.mac_array_inst.in_n);
+      //$display("%2d : MACin_n1: %128b",t,core_instance.corelet_inst.mac_array_inst.temp[8*col*psum_bw-1 :7*col*psum_bw]);
+      //temp = core_instance.corelet_inst.mac_array_inst.in_w;
+      //$display("%2d : MAC in_w:  %d %d %d %d %d %d %d %d",t,$signed(temp[8*bw-1:7*bw]),$signed(temp[7*bw-1:6*bw]),$signed(temp[6*bw-1:5*bw]),$signed(temp[5*bw-1:4*bw]),$signed(temp[4*bw-1:3*bw]),$signed(temp[3*bw-1:2*bw]),$signed(temp[2*bw-1:1*bw]),$signed(temp[1*bw-1:0*bw]));
+      //$display("%2d : MAC in_w: %32b",t,core_instance.corelet_inst.mac_array_inst.in_w);
       #0.5 clk = 1'b1;  
     end
     ////// provide some intermission to clear up the execution ///
-    #0.5 clk = 1'b0;  load = 0; l0_rd = 0;execute=0;ififo_rd = 0;
+    #0.5 clk = 1'b0;  load = 0; l0_rd = 0; execute=0; ififo_rd = 0;
     #0.5 clk = 1'b1;  
     /*for (i=0; i<10 ; i=i+1) begin
       #0.5 clk = 1'b0;
@@ -340,9 +345,9 @@ initial begin
   for (i=0; i<len_onij ; i=i+1) begin
     #0.5 clk = 1'b0;
     //if(i>col) load = 0;
-    $display("%2d : MAC valid: %8b",i,core_instance.corelet_inst.mac_array_inst.valid);
-    $display("%2d : MAC out: %128b",i,core_instance.corelet_inst.mac_array_inst.out_s);
-    $display("%2d : MAC out7 %128b",i,core_instance.corelet_inst.mac_array_inst.temp[psum_bw*5*col-1:psum_bw*4*col]);
+    //$display("%2d : MAC valid: %8b",i,core_instance.corelet_inst.mac_array_inst.valid);
+    //$display("%2d : MAC out: %128b",i,core_instance.corelet_inst.mac_array_inst.out_s);
+    //$display("%2d : MAC out7 %128b",i,core_instance.corelet_inst.mac_array_inst.temp[psum_bw*8*col-1:psum_bw*7*col]);
     #0.5 clk = 1'b1;  
   end
   #0.5 clk = 1'b0;   load=0; output_en=0;
@@ -364,7 +369,7 @@ initial begin
 
   #0.5 clk = 1'b0;   ofifo_rd = 0;  WEN_pmem = 1; CEN_pmem = 1; A_pmem = 0;
      
-  /////////////////////////////////////
+/////////////////////////////////////
 
   
 //kernal values are all computed now we sum them up to get our output
@@ -381,8 +386,8 @@ initial begin
 
 
 
-  $display("############ Verification Start during accumulation #############"); 
-$display("SRAM first output %128b",core_instance.pmem_sram.memory[11'b00000000000]);
+  $display("############ Verification Start by reading PMEM #############"); 
+//$display("SRAM first output %128b",core_instance.pmem_sram.memory[11'b00000000000]);
   #0.5 clk = 1'b0 ;A_pmem=0; CEN_pmem = 0; WEN_pmem = 1;
   #0.5 clk = 1'b1;
   #0.5 clk = 1'b0; A_pmem=1; CEN_pmem = 0; WEN_pmem = 1;
