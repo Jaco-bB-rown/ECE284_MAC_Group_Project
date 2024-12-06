@@ -187,6 +187,8 @@ initial begin
     w_scan_file = $fscanf(w_file,"%s", captured_data);
     w_scan_file = $fscanf(w_file,"%s", captured_data);
 
+
+/////////////// Reset Stage//////////////////////
     #0.5 clk = 1'b0;   reset = 1;
     #0.5 clk = 1'b1; 
 
@@ -200,9 +202,7 @@ initial begin
 
     #0.5 clk = 1'b0;   
     #0.5 clk = 1'b1;   
-
-
-
+//////////////////End Reset Stage////////////////////////////////
 
 
     /////// Kernel data writing to memory ///////
@@ -222,77 +222,29 @@ initial begin
     $fclose(w_file);
 
 
-    /////// Kernel data writing to L0 ///////
+    /////// Kernel data writing to L0  and kernal loading to MAC array///////
     A_xmem = 11'b10000000000;
-    /*#0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 0; 
-    #0.5 clk = 1'b1; */
-    for (t=0; t<col+3; t=t+1) begin  
+    for (t=0; t<2*col-1+5; t=t+1) begin  
       #0.5 clk = 1'b0;   WEN_xmem = 1; CEN_xmem = 0; 
-      if (t>1) begin A_xmem = A_xmem + 1; l0_wr = 1; end
-      if (t>2) begin   
+      if (t>1 && t<col+3) begin A_xmem = A_xmem + 1; l0_wr = 1; end
+      else if( t >= col+3 )begin WEN_xmem = 1;  CEN_xmem = 1; A_xmem = 0; l0_wr = 0; end
+      if (t>2) begin   l0_rd = 1; load = 1;
         //$display("Mem addr: %11b", core_instance.xmem_addr);
         //$display("kij= %1d %1d : l0 W in: %32b",kij,t-3,core_instance.corelet_inst.activation_in);
+      end
+      if(t>4)begin
+          if(t>1*col-3+5)begin l0_rd = 0; load = 0;end
+          else begin l0_rd = 1; load = 1;end
       end
       #0.5 clk = 1'b1;  
     end
     //$display("SRAM first weight %32b",core_instance.xmem_sram.memory[11'b10000000000]);
-    #0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 1; A_xmem = 0; l0_wr = 0;
+    #0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 1; A_xmem = 0; l0_wr = 0; l0_rd = 0; load = 0; execute=0;
     #0.5 clk = 1'b1; 
-
-
-    /////////////////////////////////////
-
-    #0.5 clk = 1'b0;   l0_rd = 1;load = 1;
-    #0.5 clk = 1'b1;
-
-    #0.5 clk = 1'b0; 
-    #0.5 clk = 1'b1;
-
-
-    /////// Kernel loading to PEs ///////
-    for (t=0; t<2*col-1; t=t+1) begin  
-      #0.5 clk = 1'b0; execute=0;  
-      if(t>1*col-3)begin l0_rd = 0; load = 0;end 
-      else begin l0_rd = 1; load = 1;end
-      //$display("Kernal loading: %32b and load= %16b",core_instance.corelet_inst.mac_array_inst.in_w,core_instance.corelet_inst.mac_array_inst.inst_w_temp);
-       
-      #0.5 clk = 1'b1;  
-    end
-
-    #0.5 clk = 1'b0;   l0_rd = 0; load = 0; execute=0;
-    #0.5 clk = 1'b1; 
-
-    /////////////////////////////////////
-  
-
-
     ////// provide some intermission to clear up the kernel loading ///
     #0.5 clk = 1'b0;  load = 0; l0_rd = 0;
     #0.5 clk = 1'b1;  
-  
 
-    for (i=0; i<16 ; i=i+1) begin
-      #0.5 clk = 1'b0;
-      #0.5 clk = 1'b1;  
-    end
-    /////////////////////////////////////
-
-
-
-    /////// Activation data writing to L0 ///////
-    A_xmem = 0;
-    for (t=0; t<len_nij+3; t=t+1) begin  
-      #0.5 clk = 1'b0;   WEN_xmem = 1; CEN_xmem = 0; 
-      if (t>1)  A_xmem = A_xmem + 1;
-      if (t>2) begin l0_wr = 1;  
-        //$display("Mem addr: %11b", core_instance.xmem_addr);
-        //$display("kij= %1d %1d : l0 A in: %32b",kij,t-3,core_instance.corelet_inst.activation_in);
-      end
-      #0.5 clk = 1'b1;  
-    end
-
-    #0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 1; A_xmem = 0; l0_wr = 0;
-    #0.5 clk = 1'b1; 
     /////////////////////////////////////
 
     p_file = $fopen(p_file_name, "r");
@@ -302,19 +254,34 @@ initial begin
     p_scan_file = $fscanf(p_file,"%s", captured_data);
 
     /////// Execution ///////
-    #0.5 clk = 1'b0;   l0_rd = 1;
+    #0.5 clk = 1'b0;   l0_rd = 0;
     #0.5 clk = 1'b1;
     #0.5 clk = 1'b0;
     #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0; WEN_pmem = 0; CEN_pmem = 0; A_pmem = 11'b00000000000 + len_nij*kij;
+    #0.5 clk = 1'b0; WEN_pmem = 0; CEN_pmem = 0; A_pmem = 11'b00000000000 + len_nij*kij; A_xmem = 0; l0_wr = 0; 
     #0.5 clk = 1'b1;
+    WEN_xmem = 1; CEN_xmem = 0;
+    for (t=0; t<len_nij+3*row+1; t=t+1) begin  
+      #0.5 clk = 1'b0;    load = 0; 
+    /////// L0 writing control 
+      if (t >= len_nij+3) begin WEN_xmem = 1;  CEN_xmem = 0; A_xmem = 0; l0_wr = 0;end
+      if(t>1 && t < len_nij+3 ) begin A_xmem = A_xmem + 1;l0_wr = 1; end
+      if (t>2 && t < len_nij+3) begin   end
 
-    for (t=0; t<len_nij+row*2+1; t=t+1) begin  
-      #0.5 clk = 1'b0;    load = 0; execute=1; 
-      if(t>len_nij-col+1)begin l0_rd = 0; end 
-      else begin l0_rd = 1; end
-      //$display("%2d : MAC in: %32b",t,core_instance.corelet_inst.mac_array_inst.in_w);
-      //$display("%2d : MAC out: %128b",t,core_instance.corelet_inst.mac_array_inst.out_s);
+    ///////// L0 read and Mac execute control
+      if(t > len_nij) begin l0_rd = 0;execute=1; end 
+      else if (t>3) begin 
+        if(t >= len_nij+2)begin execute = 0; l0_rd = 0; end
+        else if (t>7) begin l0_rd = 1; execute = 1;
+            //$display("%2d : inst %16b",t,core_instance.corelet_inst.mac_array_inst.inst_w_temp);
+            //$display("%2d : MAC in: %32b",t,core_instance.corelet_inst.mac_array_inst.in_w);
+            //$display("%2d : MAC out: %128b",t,core_instance.corelet_inst.mac_array_inst.out_s);
+        end
+        else begin l0_rd = 1; execute = 0;end
+      end
+      else begin l0_rd = 0; execute=0; end
+
+    //////// OFIFO Read and PSUM checking stage
       temp = core_instance.corelet_out;
       //OFIFO read during execution
       if(ofifo_valid) begin
@@ -337,13 +304,14 @@ initial begin
           temp_t = t; WEN_pmem = 0; CEN_pmem = 0;  A_pmem = A_pmem + 1;
         end
       end
+      //end of ofifo read if statement
       #0.5 clk = 1'b1;  
-    end
+    end //end of executing loop
 
     #0.5 clk = 1'b0;   l0_rd = 0; load = 0; execute=0; 
     #0.5 clk = 1'b1; 
     /////////////////////////////////////
-      if(error < 1) begin
+      if(error < 1) begin//only print data matched for whole kij
         $display("%1d kij: psum featuremap Data matched! :D", kij);
       end
       else error =0;
