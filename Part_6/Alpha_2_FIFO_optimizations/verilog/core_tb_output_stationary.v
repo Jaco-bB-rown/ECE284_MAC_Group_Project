@@ -225,6 +225,7 @@ initial begin
     A_xmem = 11'b10000000000;
     /*#0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 0; 
     #0.5 clk = 1'b1; */
+    
     for (t=0; t<len_kij+3; t=t+1) begin  
       #0.5 clk = 1'b0;   WEN_xmem = 1; CEN_xmem = 0; 
       if (t>1) begin A_xmem = A_xmem + 1; ififo_wr = 1; end
@@ -249,38 +250,32 @@ initial begin
     #0.5 clk = 1'b1;
 
 
-
-    /////// Activation data writing to L0 ///////
-    A_xmem = 0;
-    for (t=0; t<len_nij+3; t=t+1) begin  
-      #0.5 clk = 1'b0;   WEN_xmem = 1; CEN_xmem = 0; 
-      if (t>1)  begin A_xmem = A_xmem + 1;  l0_wr = 1; end
-      if (t>2) begin   l0_wr = 1;
-        //$display("Mem addr: %11b", core_instance.xmem_addr);
-        //$display("ic= %1d %1d : l0 A in: %32b",ic,t-3,core_instance.corelet_inst.activation_in);
-        //$display("l0_wr %b",core_instance.corelet_inst.l0_wr);
-      end
-      #0.5 clk = 1'b1;  
-    end
-
-    #0.5 clk = 1'b0;  WEN_xmem = 1;  CEN_xmem = 1; A_xmem = 0; l0_wr = 0;
-    #0.5 clk = 1'b1; 
-    /////////////////////////////////////
-
-
     /////// Execution ///////    
-    #0.5 clk = 1'b0;  ififo_rd = 1;l0_rd = 1; execute = 1;
+    #0.5 clk = 1'b0;  //ififo_rd = 1;l0_rd = 1; execute = 1;
     #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0; //ififo_rd = 1;l0_rd = 1;
+    #0.5 clk = 1'b0; A_xmem = 0; //ififo_rd = 1;l0_rd = 1;
     #0.5 clk = 1'b1;
 
-    for (t=0; t<3*row-3; t=t+1) begin  
+    for (t=0; t<3*row+len_nij; t=t+1) begin  
       #0.5 clk = 1'b0;    load = 0; // 
-      l0_rd = 1; ififo_rd = 1; execute=1;
-      if(t>len_nij-1)      begin l0_rd = 0; ififo_rd = 0; execute=0; end 
-      else if(t>len_nij-3) begin l0_rd = 1; ififo_rd = 1; execute=0; end
-      else                 begin l0_rd = 1; ififo_rd = 1; execute=1; end
+      //Activation Loading to L0
+      if(t<len_nij+3) begin
+        WEN_xmem = 1; CEN_xmem = 0; 
+        if (t>1)  begin    l0_wr = 1; A_xmem = A_xmem + 1; end
+      end
+      else begin WEN_xmem = 1;  CEN_xmem = 0; A_xmem = 0; l0_wr = 0; end
+      //execution
+      if(t>8) begin
+        if(t>2*len_nij+3)     begin  l0_rd = 0; ififo_rd = 0; execute = 0;  end 
+        else if(t>2*len_nij)  begin  l0_rd = 1; ififo_rd = 1; execute = 0;  end
+        else if(t>9)          begin  l0_rd = 1; ififo_rd = 1; execute = 1;  end
+        else                  begin  l0_rd = 0; ififo_rd = 0; execute = 0;  end
+      end
+      else begin  l0_rd = 0; ififo_rd = 0; execute = 0;  end
+      
+      ///////////Debugging Statements, Uncomment only what you need if it doesn't work////////////////////////
       //$display("%2d : ififo_rd %b",t,core_instance.corelet_inst.ififo_rd);
+      //$display("%2d : L0_rd %b",t,core_instance.corelet_inst.l0_rd);
       //$display("%2d : inst %16b",t,core_instance.corelet_inst.mac_array_inst.inst_w_temp);
       //$display("%2d : MAC in_n: %32b",t,core_instance.corelet_inst.ififo_out);
       //temp = core_instance.corelet_inst.ififo_out;
@@ -289,7 +284,7 @@ initial begin
       //$display("%2d : MACin_n1: %128b",t,core_instance.corelet_inst.mac_array_inst.temp[8*col*psum_bw-1 :7*col*psum_bw]);
       //temp = core_instance.corelet_inst.mac_array_inst.in_w;
       //$display("%2d : MAC in_w:  %d %d %d %d %d %d %d %d",t,$signed(temp[8*bw-1:7*bw]),$signed(temp[7*bw-1:6*bw]),$signed(temp[6*bw-1:5*bw]),$signed(temp[5*bw-1:4*bw]),$signed(temp[4*bw-1:3*bw]),$signed(temp[3*bw-1:2*bw]),$signed(temp[2*bw-1:1*bw]),$signed(temp[1*bw-1:0*bw]));
-      //$display("%2d : MAC in_w: %32b",t,core_instance.corelet_inst.mac_array_inst.in_w);
+      //$display("%2d : MAC in_w: %32b",t,core_instance.corelet_inst.l0_fifo_out);
       #0.5 clk = 1'b1;  
     end
 
