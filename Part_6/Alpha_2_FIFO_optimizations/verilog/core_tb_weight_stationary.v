@@ -254,10 +254,7 @@ initial begin
     p_scan_file = $fscanf(p_file,"%s", captured_data);
 
     /////// Execution ///////
-    #0.5 clk = 1'b0;   l0_rd = 0;
-    #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0;
-    #0.5 clk = 1'b1;
+
     #0.5 clk = 1'b0; WEN_pmem = 0; CEN_pmem = 0; A_pmem = 11'b00000000000 + len_nij*kij; A_xmem = 0; l0_wr = 0; 
     #0.5 clk = 1'b1;
     WEN_xmem = 1; CEN_xmem = 0;
@@ -266,13 +263,11 @@ initial begin
     /////// L0 writing control 
       if (t >= len_nij+3) begin WEN_xmem = 1;  CEN_xmem = 0; A_xmem = 0; l0_wr = 0;end
       if(t>1 && t < len_nij+3 ) begin A_xmem = A_xmem + 1;l0_wr = 1; end
-      if (t>2 && t < len_nij+3) begin   end
 
     ///////// L0 read and Mac execute control
       if(t > len_nij) begin l0_rd = 0;execute=1; end 
       else if (t>3) begin 
-        if(t >= len_nij+2)begin execute = 0; l0_rd = 0; end
-        else if (t>7) begin l0_rd = 1; execute = 1;
+        if (t>7) begin l0_rd = 1; execute = 1;
             //$display("%2d : inst %16b",t,core_instance.corelet_inst.mac_array_inst.inst_w_temp);
             //$display("%2d : MAC in: %32b",t,core_instance.corelet_inst.mac_array_inst.in_w);
             //$display("%2d : MAC out: %128b",t,core_instance.corelet_inst.mac_array_inst.out_s);
