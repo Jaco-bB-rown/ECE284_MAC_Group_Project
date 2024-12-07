@@ -334,7 +334,7 @@ initial begin
 
         $display("kij%1d : %2d rd Mem addr: %2d", kij, t, A_rd_pmem);
         //$display("%2d : temp 1 addr: %2d", t, A_temp);
-        $display("kij%1 : %2d wr Mem addr: %2d", kij, t, A_wr_pmem);
+        $display("kij%1d : %2d wr Mem addr: %2d", kij, t, A_wr_pmem);
         
         //$display("%2d : nij %2d: ofifo_valid: %1b",t,nij-1,ofifo_valid);
         //$display("%2d : nij %2d: ofifo_read:  %1b",t,nij-1,ofifo_rd);
