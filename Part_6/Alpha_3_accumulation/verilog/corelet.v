@@ -12,8 +12,7 @@ module corelet #(
     output wire [psum_bw*col-1:0] corelet_out,
     output wire o_ready,
     output wire o_valid,
-    input wire [8:0] inst,
-    input wire [psum_bw*col-1:0] in_pmsm
+    input wire [8:0] inst
 );
 
     // Internal signals
@@ -24,6 +23,7 @@ module corelet #(
     wire [psum_bw*col-1:0] mac_array_in_n;//not used in this part
     wire ofifo_full, ofifo_ready, ofifo_valid;
     wire [psum_bw*col-1:0] ofifo_out, sfp_out;
+    wire [psum_bw*col-1:0] sfp_in_temp;
 
     // Extract control signals from inst
     wire ofifo_rd ;
@@ -39,7 +39,9 @@ module corelet #(
     assign l0_rd = inst[3];
     assign l0_wr = inst[2];
     assign o_ready = ofifo_ready;
-    assign corelet_out = inst[7] ? sfp_out : ofifo_out;
+    assign o_valid = ofifo_valid;
+    assign corelet_out = sfp_out; 
+    assign sfp_in_temp = (inst[7] && ofifo_valid) ? ofifo_out : sfp_in; // if accu, input ofifo to sfp, otherwise input sth from core
     // L0 FIFO
     l0_fifo #(.bw(bw), .row(row)) l0_fifo_inst (
         .clk(clk),
@@ -62,7 +64,7 @@ module corelet #(
         .o_full(ofifo_full),
         .reset(reset),
         .o_ready(ofifo_ready),
-        .o_valid(o_valid)
+        .o_valid(ofifo_valid)
     );
 
     // MAC Array
@@ -79,8 +81,8 @@ module corelet #(
     sfp #(.bw(psum_bw), .col(col)) sfp_row  (
         .clk(clk),
         .reset(reset),
-        .in(sfp_in),
-        .in_pmsm(in_pmsm),
+        .in(sfp_in_temp),
+        .in_pmem(sfp_in),
         .out(sfp_out),
         .en_relu(inst[8])
     );

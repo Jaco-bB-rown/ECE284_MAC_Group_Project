@@ -11,11 +11,21 @@ module sram_db (CLK, D, Q, CEN, REN, WEN, A_rd, A_wr);
   input  [$clog2(num)-1:0] A_wr;
   output [bw-1:0] Q;
   parameter num = 2048;
-  parameter bw = 32;
+  parameter bw = 128;
+  integer i;
 
   reg [bw-1:0] memory [num-1:0];
   reg [$clog2(num)-1:0] add_q;
   assign Q = memory[add_q];
+
+   initial begin
+      for (i = 0; i < num; i = i + 1) begin
+         memory [i] = 0;
+      if (i == 22) begin
+         memory [i] = 1;
+      end
+      end
+   end
 
   always @ (posedge CLK) begin
 

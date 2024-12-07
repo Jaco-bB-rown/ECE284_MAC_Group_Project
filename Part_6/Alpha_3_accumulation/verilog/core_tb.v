@@ -38,6 +38,7 @@ reg [10:0] A_rd_pmem_q = 0; //adress
 reg [10:0] A_wr_pmem_q = 0;
 reg [10:0] A_rd_pmem = 0; //adress
 reg [10:0] A_wr_pmem = 0;
+reg [10:0] A_temp = 0;
 reg CEN_pmem_q = 1;
 reg WEN_pmem_q = 1;
 reg REN_pmem_q = 1;
@@ -173,7 +174,7 @@ initial begin
   /////////////////////////////////////////////////
 
 //loop through all of our kernal values and check the psum for each one
-  $display("############ Verification Start during Partial Sum Calculation #############");
+  //$display("############ Verification Start during Partial Sum Calculation #############");
   for (kij=0; kij<9; kij=kij+1) begin  // kij loop
 
     case(kij)
@@ -310,31 +311,58 @@ initial begin
     p_scan_file = $fscanf(p_file,"%s", captured_data);
 
     /////// Execution ///////
-    #0.5 clk = 1'b0;   l0_rd = 1;
-    #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0;
+    #0.5 clk = 1'b0;    l0_rd = 1; execute=0;// 
     #0.5 clk = 1'b1;
     #0.5 clk = 1'b0; 
     #0.5 clk = 1'b1;
 
-    for (t=0; t<len_nij*2; t=t+1) begin // increase the loop cycle anyhow
-      #0.5 clk = 1'b0;    load = 0; execute=1; 
+    #0.5 clk = 1'b0; //
+    #0.5 clk = 1'b1;
+
+    for (t=0; t<len_nij+2*(row+2); t=t+1) begin // increase the loop cycle anyhow
+      #0.5 clk = 1'b0; load = 0; execute=1; acc = 1; CEN_pmem = 0; WEN_pmem = 0; REN_pmem = 0;
       if(t>len_nij-col+1)begin l0_rd = 0; end 
       else begin l0_rd = 1; end
 
-      if (ofifo_valid) begin
-        nij = nij + 1;
-        A_wr_pmem = A_rd_pmem;
-        A_rd_pmem = ((nij/len_ni+1)+(1-kij/3))*(len_ni+2) + ((nij%len_ni+1)+(1-kij%len_ki));
-        CEN_pmem = 0; WEN_pmem = 0; REN_pmem = 0;
-        ofifo_rd = 1; acc = 1; 
+        if (t>2*row+2) begin
+          ofifo_rd = 1; 
+        end
+        if (t>2*row) begin
+          nij = nij + 1;
+        A_wr_pmem = A_temp; A_temp = A_rd_pmem;
+        A_rd_pmem = (((nij-1)/len_ni+1)+(1-kij/3))*(len_ni+2)+(((nij-1)%len_ni+1)+(1-kij%len_ki));
+
+        $display("kij%1d : %2d rd Mem addr: %2d", kij, t, A_rd_pmem);
+        //$display("%2d : temp 1 addr: %2d", t, A_temp);
+        $display("kij%1 : %2d wr Mem addr: %2d", kij, t, A_wr_pmem);
+        
+        //$display("%2d : nij %2d: ofifo_valid: %1b",t,nij-1,ofifo_valid);
+        //$display("%2d : nij %2d: ofifo_read:  %1b",t,nij-1,ofifo_rd);
+        //$display("%2d : nij %2d: array_valid: %1b",t,nij-1,core_instance.corelet_inst.mac_array_valid);
+        //$display("%2d, nij %2d: fifo_ptr: %2d",t,nij-1,core_instance.corelet_inst.ofifo_inst.fifo_instance[0].rd_ptr);
+        //$display("%2d, nij %2d: core_out: %128b",t,nij-1,core_instance.corelet_inst.ofifo_out);
+        //$display("%2d, nij %2d: pmem_out: %128b",t,nij-1,core_instance.pmem_out);
+        //$display("%2d, nij %2d: sfp_in_p: %128b",t,nij-1,core_instance.corelet_inst.sfp_in);
+        //$display("%2d, nij %2d: sfp_in_of:%128b",t,nij-1,core_instance.corelet_inst.sfp_in_temp);
+        //$display("%2d, nij %2d: sfp_old:  %128b",t,nij-1,core_instance.corelet_inst.sfp_row.in_old);
+        //$display("%2d, nij %2d: sfp_acc:  %128b",t,nij-1,core_instance.corelet_inst.sfp_row.acc);
+        //$display("%2d, nij %2d: sfp_in_p: %128b",t,nij-1,core_instance.corelet_inst.sfp_row.in_pmem);
+        //$display("%2d, nij %2d: sfp_out:  %128b",t,nij-1,core_instance.corelet_inst.sfp_out);
+
+        //$display("%2d : in_pmem: %128b",t,core_instance.corelet_inst.in_pmem);
+        $display("kij%1d : %2d pmem out :  %128b",kij, t,core_instance.pmem_sram.Q);
+        $display("kij%1d : %2d pmem in  :  %128b",kij, t,core_instance.pmem_sram.D);
       end
       //$display("%2d : MAC in: %32b",t,core_instance.corelet_inst.mac_array_inst.in_w);
       //$display("%2d : MAC out: %128b",t,core_instance.corelet_inst.mac_array_inst.out_s);
+      //$display("%2d : MAC out: %11b",t,core_instance.corelet_inst.mac_array_inst.out_s);
+      
       #0.5 clk = 1'b1;  
     end
 
-    #0.5 clk = 1'b0; l0_rd = 0; load = 0; execute=0; WEN_pmem = 1;;
+    
+
+    #0.5 clk = 1'b0; l0_rd = 0; load = 0; execute=0; WEN_pmem = 1; acc = 0; ofifo_rd = 0; nij = 0; // reset nij after each kij loop
     #0.5 clk = 1'b1; 
     /////////////////////////////////////
 
@@ -399,17 +427,17 @@ initial begin
   for (i=0; i<len_onij; i=i+1) begin 
 
     A_rd_pmem=(2+i/len_oni)*(len_ni+2)+(2+i%len_oni);
-    #0.5 clk = 1'b0; CEN_pmem = 0; WEN_pmem = 1; REN_pmem = 0; en_relu = 1;
-    #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0; CEN_pmem = 0; WEN_pmem = 1; REN_pmem = 0;
-    #0.5 clk = 1'b1;
-    #0.5 clk = 1'b0; CEN_pmem = 1; WEN_pmem = 1; acc=0;
+    #0.5 clk = 1'b0; CEN_pmem = 0; WEN_pmem = 1; REN_pmem = 0; en_relu = 1; acc = 0;
+    #0.5 clk = 1'b1; #0.5 clk = 1'b0; // wait for pmem output
+    #0.5 clk = 1'b1; #0.5 clk = 1'b0;
+    #0.5 clk = 1'b1; #0.5 clk = 1'b0;
     #0.5 clk = 1'b1;
      out_scan_file = $fscanf(out_file,"%128b", answer); // reading from out file to answer
        if (sfp_out == answer)
          $display("%2d-th output featuremap Data matched! :D", i); 
        else begin
          $display("%2d-th output featuremap Data ERROR!!", i); 
+         $display("%2d-th addr: %2d", i, A_rd_pmem); 
          $display("sfpout  : %16b %16b %16b %16b %16b %16b %16b %16b", 
          sfp_out[psum_bw*8-1:psum_bw*7],sfp_out[psum_bw*7-1:psum_bw*6],sfp_out[psum_bw*6-1:psum_bw*5],sfp_out[psum_bw*5-1:psum_bw*4],sfp_out[psum_bw*4-1:psum_bw*3],sfp_out[psum_bw*3-1:psum_bw*2],sfp_out[psum_bw*2-1:psum_bw*1],sfp_out[psum_bw*1-1:psum_bw*0]
          );

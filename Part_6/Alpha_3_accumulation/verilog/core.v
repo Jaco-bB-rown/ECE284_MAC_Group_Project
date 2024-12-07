@@ -32,10 +32,10 @@ module core #(
 
     assign act_in = xmem_out;
     //assign corelet_in = xmem_out;
-    assign pmem_in =  corelet_out;  // if accumulation sfp goes to pmem else corelet goes to pmem
-    assign sfp_out = inst[45] ? corelet_out : 0;;
+    assign pmem_in = inst[45] ? corelet_out : 0;  // if accumulation sfp goes to pmem else corelet goes to pmem
+    assign sfp_out = corelet_out;
     assign ofifo_valid = o_valid;
-    assign sfp_in = inst[45] ? pmem_out : 0;
+    assign sfp_in = pmem_out;
 
     // SRAM for activations and weights
     sram #(.bw(row*bw)) xmem_sram (
@@ -54,6 +54,7 @@ module core #(
         .Q(pmem_out),
         .CEN(CEN_pmem),
         .WEN(WEN_pmem),
+        .REN(REN_pmem),
         .A_wr(pmem_wr_addr),
         .A_rd(pmem_rd_addr)
     );
@@ -67,8 +68,7 @@ module core #(
         .weight_in(weight_in),
         .sfp_in(sfp_in),
         .corelet_out(corelet_out),
-        .o_valid(o_valid),
-        .in_pmsm(pmem_out)
+        .o_valid(o_valid)
     );
 
 
