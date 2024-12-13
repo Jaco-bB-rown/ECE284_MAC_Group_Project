@@ -72,7 +72,7 @@ module corelet #(
 
     // OFIFO
     ofifo #(.bw(psum_bw), .col(col)) ofifo_inst (
-        .clk(clk),
+        .clk(ofifo_clk),
         .in(mac_array_out),
         .out(ofifo_out),
         .rd(ofifo_rd),
